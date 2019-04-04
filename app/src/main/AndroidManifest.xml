@@ -2,20 +2,39 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="tracer.whereiam">
 
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <application
+        android:name=".GlobalApplication"
         android:allowBackup="true"
+        android:hardwareAccelerated="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme.NoActionBar">
-        <activity android:name=".login">
+        <activity android:name=".Loading">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-    </application>
 
+        <meta-data
+            android:name="com.kakao.sdk.AppKey"
+            android:value="@string/kakao_app_key"/>
+
+        <activity android:name=".login">
+
+        </activity>
+        <activity
+            android:name=".QRScanner"
+            android:screenOrientation="fullSensor"
+            android:stateNotNeeded="true"
+            android:theme="@style/zxing_CaptureTheme"
+            android:windowSoftInputMode="stateAlwaysHidden">
+
+        </activity>
+    </application>
 </manifest>
