@@ -2,16 +2,19 @@
 <resources>
     <color name="colorWhiteSky">#F0F8FF</color>
     <color name="colorSoftSky">#A5D3EE</color>
-    <color name="colorSky">#64B8EB</color>
+    <color name="colorSky">#4DBCE9</color>
     <color name="colorSkyBlue">#188CD1</color>
     <color name="colorBlue">#0277BD</color>
     <color name="colorDarkSky">#006AAA</color>
     <color name="colorDarkGreen">#546E7A</color>
     <color name="colorMint">#A4BCC2</color>
-    <color name="colorDartMint">#81A8B8</color>
+    <color name="colorDarkMint">#81A8B8</color>
     <color name="colorWhiteMint">#E8F3F8</color>
     <color name="colorPurple">#915EAB</color>
     <color name="colorWhitePurple">#C0ADDB</color>
     <color name="colorSnow">#F0F9FF</color>
     <color name="colorKaKao">#F5E91E</color>
+    <color name="colorWhiteYellowGreen">#E0E4CC</color>
+    <color name="colorOrange">#F38630</color>
+
 </resources>
