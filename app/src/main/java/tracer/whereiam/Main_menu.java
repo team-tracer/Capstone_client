@@ -9,13 +9,17 @@ import android.graphics.drawable.shapes.OvalShape;
 import android.os.AsyncTask;
 import android.os.Environment;
 import android.os.Handler;
+import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.view.Gravity;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.kakao.network.ErrorResult;
 import com.kakao.usermgmt.UserManagement;
@@ -36,9 +40,10 @@ import java.util.List;
 import de.hdodenhof.circleimageview.CircleImageView;
 
 public class Main_menu extends AppCompatActivity {
-    private Button btn_logout, btn_disconnect;
+    private ImageButton btn_drawer, btn_dot;
     private TextView text_name;
     private CircleImageView profile_image;
+    private DrawerLayout drawer_layout;
 
     String Nickname = "";
     String pImage = "";
@@ -53,22 +58,47 @@ public class Main_menu extends AppCompatActivity {
         text_name = (TextView)findViewById(R.id.textName);
         profile_image = (CircleImageView)findViewById(R.id.profileImage);
 
-        btn_logout = (Button)findViewById(R.id.btn_logout);
-        btn_logout.setOnClickListener(new View.OnClickListener(){
+        btn_drawer = (ImageButton)findViewById(R.id.btn_drawer);
+        btn_drawer.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View v){
-                onClickLogout();
+                drawer_layout = (DrawerLayout) findViewById(R.id.drawer) ;
+                if (!drawer_layout.isDrawerOpen(Gravity.LEFT)) {
+                    drawer_layout.openDrawer(Gravity.LEFT);
+                }
+                else {
+                    drawer_layout.closeDrawer(Gravity.LEFT);
+                }
             }
         });
-        btn_disconnect = (Button)findViewById(R.id.btn_disconnect);
-        btn_disconnect.setOnClickListener(new View.OnClickListener(){
-            @Override
-            public void onClick(View v){
-                onClickUnlink();
-            }
-        });
-        Logger.e("after Nickname : " + Nickname);
 
+        btn_dot = (ImageButton)findViewById(R.id.btn_dot);
+        btn_dot.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View v){
+                show();
+            }
+        });
+    }
+    private void show()
+    {
+        final List<String> ListItems = new ArrayList<>();
+        ListItems.add("로그아웃");
+        ListItems.add("앱 연결 해제");
+        final CharSequence[] items =  ListItems.toArray(new String[ListItems.size()]);
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setItems(items, new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int pos) {
+                if(items[pos] == "로그아웃"){
+                    onClickLogout();
+                }
+                else {
+                    onClickUnlink();
+                }
+            }
+        });
+        builder.show();
     }
     private void onClickUnlink() {
         final String appendMessage = getString(R.string.com_kakao_confirm_unlink);
@@ -124,7 +154,9 @@ public class Main_menu extends AppCompatActivity {
     Handler handler = new Handler();    //카카오톡 이미지 연동 시 사용할 핸들러입니다!
     //이미지 연동
     public void LinkImage(){
-        if(pImage.equals(""));
+        if(pImage == null){
+            profile_image.setImageResource(R.drawable.thumb_talk);
+        }
         else {
             new ImageDownload().execute(pImage);
             // 인터넷 상의 이미지 보여주기
@@ -238,10 +270,6 @@ public class Main_menu extends AppCompatActivity {
                 userID = response.getId();
                 Nickname = response.getNickname();
                 pImage = response.getProfileImagePath();
-                Logger.e("user id : " + userID);
-                Logger.e("Nickname : " + Nickname);
-                Logger.e("thumbnail image : " + response.getThumbnailImagePath());
-                Logger.e("profile image: " + pImage);
                 text_name.setText(Nickname);
                 LinkImage();
             }

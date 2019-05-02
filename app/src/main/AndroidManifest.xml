@@ -26,13 +26,17 @@
             android:value="@string/kakao_app_key" />
 
         <activity android:name=".login"></activity>
+
         <activity
             android:name=".QRScanner"
             android:screenOrientation="fullSensor"
             android:stateNotNeeded="true"
             android:theme="@style/zxing_CaptureTheme"
             android:windowSoftInputMode="stateAlwaysHidden"></activity>
-        <activity android:name=".Main_menu"></activity>
+
+        <activity android:name=".Main_menu">
+
+        </activity>
     </application>
 
 </manifest>

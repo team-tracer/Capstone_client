@@ -6,66 +6,91 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     tools:context=".Main_menu"
-    android:background="@color/colorSkyBlue">
-    <LinearLayout
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_margin="10dp">
-        <Button
-            android:id="@+id/btn_logout"
+    android:background="@color/colorWhiteGray">
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:background="@color/colorSkyBlue">
+        <ImageButton
+            android:id="@+id/btn_drawer"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="로그아웃"
+            android:layout_centerVertical="true"
+            android:layout_alignParentLeft="true"
+            android:backgroundTint="@android:color/transparent"
+            android:src="@drawable/ic_menu_24dp"
             />
-        <Button
-            android:id="@+id/btn_disconnect"
+        <ImageView
+            android:layout_width="150dp"
+            android:layout_height="30dp"
+            android:src="@drawable/text_logo"
+            android:layout_centerInParent="true"
+            />
+        <ImageButton
+            android:id="@+id/btn_dot"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="앱 연결 해제"/>
-    </LinearLayout>
-    <LinearLayout
+            android:layout_centerVertical="true"
+            android:backgroundTint="@android:color/transparent"
+            android:layout_alignParentRight="true"
+            android:src="@drawable/ic_more_vert_24dp"
+            />
+    </RelativeLayout>
+    <android.support.v4.widget.DrawerLayout
+        android:id="@+id/drawer"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:layout_weight="1"
-        android:background="@drawable/corners"
-        android:backgroundTint="@color/colorWhite"
-        android:layout_margin="15dp">
-
-        <RelativeLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content">
-            <de.hdodenhof.circleimageview.CircleImageView xmlns:app="http://schemas.android.com/apk/res-auto"
-                android:id="@+id/profileImage"
-                android:layout_width="150dp"
-                android:layout_height="150dp"
-                app:civ_border_color="@color/colorSoftSky"
-                app:civ_border_width="1dp"
-                android:layout_centerInParent="true"
-                android:layout_margin="20dp"
-                />
-        </RelativeLayout>
-        <RelativeLayout
-            android:layout_width="match_parent"
+        android:layout_height="match_parent">
+        <LinearLayout
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_margin="20dp">
-            <TextView
-                android:id="@+id/textName"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_centerInParent="true"
-                android:textSize="20dp"
-                android:textColor="#000000"
-                />
-        </RelativeLayout>
-    </LinearLayout>
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_weight="1.5"
-        android:orientation="vertical">
+            android:orientation="vertical">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:layout_weight="1"
+                android:background="@drawable/corners"
+                android:backgroundTint="@color/colorWhite"
+                android:layout_margin="15dp">
 
-    </LinearLayout>
-
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+                    <de.hdodenhof.circleimageview.CircleImageView xmlns:app="http://schemas.android.com/apk/res-auto"
+                        android:id="@+id/profileImage"
+                        android:layout_width="150dp"
+                        android:layout_height="150dp"
+                        app:civ_border_color="@color/colorSoftSky"
+                        app:civ_border_width="1dp"
+                        android:layout_centerInParent="true"
+                        android:layout_margin="20dp"/>
+                </RelativeLayout>
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="20dp">
+                    <TextView
+                        android:id="@+id/textName"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_centerInParent="true"
+                        android:textSize="20dp"
+                        android:textColor="#000000"
+                        />
+                </RelativeLayout>
+            </LinearLayout>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_weight="1.5"
+                android:orientation="vertical">
+            </LinearLayout>
+        </LinearLayout>
+        <TextView
+            android:layout_width="200dp"
+            android:layout_height="match_parent"
+            android:text="hello"
+            android:layout_gravity="left"
+            android:background="@color/colorDarkSky"/>
+    </android.support.v4.widget.DrawerLayout>
 </LinearLayout>

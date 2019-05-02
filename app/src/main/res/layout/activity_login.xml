@@ -37,7 +37,7 @@
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@color/colorWhite"
+        android:background="@color/colorWhiteGray"
         android:layout_weight="2.5">
         <Button
             android:id="@+id/btn_custom_login"
