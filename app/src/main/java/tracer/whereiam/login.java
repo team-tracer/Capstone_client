@@ -34,10 +34,10 @@ public class login extends AppCompatActivity {
             @Override
             public void onClick(View view){
                 btn_kakao_login.performClick();
-            }
-        });
-        btn_kakao_login = (LoginButton) findViewById(R.id.btn_kakao_login);
-    }
+        }
+    });
+    btn_kakao_login = (LoginButton) findViewById(R.id.btn_kakao_login);
+}
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data){
         if(Session.getCurrentSession().handleActivityResult(requestCode, resultCode, data)){
@@ -60,7 +60,7 @@ public class login extends AppCompatActivity {
         @Override
         public void onSessionOpenFailed(KakaoException exception) {
             if(exception != null) {
-                Logger.e(exception);
+                Logger.e("login error"+exception);
             }
         }
     }

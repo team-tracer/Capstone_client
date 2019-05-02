@@ -16,7 +16,10 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import com.google.zxing.integration.android.IntentIntegrator;
+import com.google.zxing.integration.android.IntentResult;
 import com.kakao.network.ErrorResult;
 import com.kakao.usermgmt.UserManagement;
 import com.kakao.usermgmt.callback.LogoutResponseCallback;
@@ -24,6 +27,9 @@ import com.kakao.usermgmt.callback.MeV2ResponseCallback;
 import com.kakao.usermgmt.callback.UnLinkResponseCallback;
 import com.kakao.usermgmt.response.MeV2Response;
 import com.kakao.util.helper.log.Logger;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -34,11 +40,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 import de.hdodenhof.circleimageview.CircleImageView;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
 
 public class Main_menu extends AppCompatActivity {
     private Button btn_logout, btn_disconnect;
     private TextView text_name;
     private CircleImageView profile_image;
+    private Button scanButton;
+    private IntentIntegrator qrScan;
 
     String Nickname = "";
     String pImage = "";
@@ -65,6 +78,16 @@ public class Main_menu extends AppCompatActivity {
             @Override
             public void onClick(View v){
                 onClickUnlink();
+            }
+        });
+        scanButton=(Button)findViewById(R.id.scanButton);
+        qrScan=new IntentIntegrator(this);
+
+        scanButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                qrScan.setPrompt("Scanning");
+                qrScan.initiateScan();
             }
         });
         Logger.e("after Nickname : " + Nickname);
@@ -252,5 +275,59 @@ public class Main_menu extends AppCompatActivity {
         final Intent intent = new Intent(this, login.class);
         startActivity(intent);
         finish();
+    }
+
+    protected void onActivityResult(int requestCode, int resultCode, Intent data){
+        IntentResult result=IntentIntegrator.parseActivityResult(requestCode,resultCode,data);
+        if(result!=null){
+            if(result.getContents()==null){
+                Toast.makeText(Main_menu.this, "취소!", Toast.LENGTH_SHORT).show();
+            }
+            else{
+                Toast.makeText(Main_menu.this,"스캔완료!",Toast.LENGTH_SHORT).show();
+                try{
+                    JSONObject obj=new JSONObject(result.getContents());
+                    req_map(obj.getString("imageUrl"),obj.getInt("x"),obj.getInt("y"));
+                }catch (JSONException e){
+                    e.printStackTrace();
+                }
+            }
+
+        }else{
+            super.onActivityResult(requestCode,resultCode,data);
+        }
+    }
+    public void req_map(String url, Integer pos_x, Integer pos_y){
+        Scan_Req_Format req_format= new Scan_Req_Format(url,pos_x,pos_y);
+        Retrofit retrofit=new Retrofit.Builder().addConverterFactory(GsonConverterFactory.create())
+                .baseUrl(RetroApi.BASEURL).build();
+        RetroApi apiService=retrofit.create(RetroApi.class);
+        JSONObject req_obj=new JSONObject();
+        try {
+            req_obj.put("imageUrl", url);
+            req_obj.put("posX",pos_x);
+            req_obj.put("posY",pos_y);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
+        Call<Scan_Res_Format> res=apiService.request(req_obj);
+        res.enqueue(new Callback<Scan_Res_Format>() {
+            @Override
+            public void onResponse(Call<Scan_Res_Format> call, Response<Scan_Res_Format> response) {
+                if(response.isSuccessful()){
+                    // 서버와의 통신 형식을 맞추어 이미지파일을 어떻게 불러올 것인지 정해야함
+                    // 그래서 이 부분 로직과 Scan_Res_Format을 작성해야함
+                    // QR코드를 스캔한 뒤, 액티비티를 만들고 이미지와 현재위치 정보를 인텐트로 넘겨줘야함
+//                    if(response.body()!=""){
+//                        //Scan_Res_Format result=response.body();
+//                    }
+                }
+            }
+            @Override
+            public void onFailure(Call<Scan_Res_Format> call, Throwable t) {
+                Toast.makeText(Main_menu.this, "fuck", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 }
