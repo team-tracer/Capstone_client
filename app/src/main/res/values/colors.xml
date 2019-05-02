@@ -16,5 +16,6 @@
     <color name="colorKaKao">#F5E91E</color>
     <color name="colorWhiteYellowGreen">#E0E4CC</color>
     <color name="colorOrange">#F38630</color>
+    <color name="colorWhite">#FFFFFF</color>
 
 </resources>
