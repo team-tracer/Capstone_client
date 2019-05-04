@@ -1,5 +1,6 @@
 package tracer.whereiam;
 
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -12,6 +13,7 @@ import android.os.Handler;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -31,11 +33,16 @@ import com.kakao.util.helper.log.Logger;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -52,10 +59,15 @@ public class Main_menu extends AppCompatActivity {
     private CircleImageView profile_image;
     private Button scanButton;
     private IntentIntegrator qrScan;
+    private ImageView imageView;
+    private TextView textView;
+    private TextView textView2;
+    Bitmap bitmap;
 
     String Nickname = "";
     String pImage = "";
     long userID = 0;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -81,6 +93,10 @@ public class Main_menu extends AppCompatActivity {
             }
         });
         scanButton=(Button)findViewById(R.id.scanButton);
+        imageView=(ImageView)findViewById(R.id.imageView);
+        textView=(TextView)findViewById(R.id.textView);
+        textView2=(TextView)findViewById(R.id.textView2);
+
         qrScan=new IntentIntegrator(this);
 
         scanButton.setOnClickListener(new View.OnClickListener() {
@@ -287,7 +303,7 @@ public class Main_menu extends AppCompatActivity {
                 Toast.makeText(Main_menu.this,"스캔완료!",Toast.LENGTH_SHORT).show();
                 try{
                     JSONObject obj=new JSONObject(result.getContents());
-                    req_map(obj.getString("imageUrl"),obj.getInt("x"),obj.getInt("y"));
+                    req_map(obj.getString("imageUrl"),obj.getInt("posX"),obj.getInt("posY"));
                 }catch (JSONException e){
                     e.printStackTrace();
                 }
@@ -297,37 +313,67 @@ public class Main_menu extends AppCompatActivity {
             super.onActivityResult(requestCode,resultCode,data);
         }
     }
-    public void req_map(String url, Integer pos_x, Integer pos_y){
-        Scan_Req_Format req_format= new Scan_Req_Format(url,pos_x,pos_y);
-        Retrofit retrofit=new Retrofit.Builder().addConverterFactory(GsonConverterFactory.create())
-                .baseUrl(RetroApi.BASEURL).build();
-        RetroApi apiService=retrofit.create(RetroApi.class);
-        JSONObject req_obj=new JSONObject();
-        try {
-            req_obj.put("imageUrl", url);
-            req_obj.put("posX",pos_x);
-            req_obj.put("posY",pos_y);
-        }catch (Exception e){
-            e.printStackTrace();
-        }
-
-        Call<Scan_Res_Format> res=apiService.request(req_obj);
-        res.enqueue(new Callback<Scan_Res_Format>() {
+    public void req_map(final String url,final Integer pos_x, final Integer pos_y){
+        Thread mThread=new Thread(){
+            String path="http://192.168.0.11:8000/images/"+url;
             @Override
-            public void onResponse(Call<Scan_Res_Format> call, Response<Scan_Res_Format> response) {
-                if(response.isSuccessful()){
-                    // 서버와의 통신 형식을 맞추어 이미지파일을 어떻게 불러올 것인지 정해야함
-                    // 그래서 이 부분 로직과 Scan_Res_Format을 작성해야함
-                    // QR코드를 스캔한 뒤, 액티비티를 만들고 이미지와 현재위치 정보를 인텐트로 넘겨줘야함
-//                    if(response.body()!=""){
-//                        //Scan_Res_Format result=response.body();
-//                    }
+            public void run(){
+                try{
+                    URL url=new URL(path);
+                    HttpURLConnection conn=(HttpURLConnection)url.openConnection();
+                    conn.setDoInput(true);
+                    conn.connect();
+                    InputStream is=conn.getInputStream();
+                    bitmap=BitmapFactory.decodeStream(is);
+                }catch (MalformedURLException e){
+                    e.printStackTrace();
+                }catch (IOException e){
+                    e.printStackTrace();
                 }
             }
-            @Override
-            public void onFailure(Call<Scan_Res_Format> call, Throwable t) {
-                Toast.makeText(Main_menu.this, "fuck", Toast.LENGTH_SHORT).show();
-            }
-        });
+        };
+        mThread.start();
+        try{
+            mThread.join();
+            Intent intent=new Intent(this,Navi_activity.class);
+            ByteArrayOutputStream bs=new ByteArrayOutputStream();
+            bitmap.compress(Bitmap.CompressFormat.JPEG,50,bs);
+            intent.putExtra("byteArray",bs.toByteArray());
+            startActivity(intent);
+//            imageView.setImageBitmap(bitmap);
+        }catch (InterruptedException e){
+            e.printStackTrace();
+        }
+//        Scan_Req_Format req_format= new Scan_Req_Format(url);
+//        Retrofit retrofit=new Retrofit.Builder().addConverterFactory(GsonConverterFactory.create())
+//                .baseUrl(RetroApi.BASEURL).build();
+//        RetroApi apiService=retrofit.create(RetroApi.class);
+//
+//        Call<Scan_Res_Format> res=apiService.request(req_format);
+//        //,req_format.getPositionX(),req_format.getPositionY()
+//        res.enqueue(new Callback<Scan_Res_Format>() {
+//            @Override
+//            public void onResponse(Call<Scan_Res_Format> call, Response<Scan_Res_Format> response) {
+//                if(response.isSuccessful()){
+//
+//                    Bitmap imgpath=response.body().getMap_image();
+//                    Log.e("imgPath:",imgpath.toString());
+//                    imageView.setImageBitmap(imgpath);
+//
+//
+//                    //Toast.makeText(Main_menu.this,response.body().getMessage(),Toast.LENGTH_SHORT).show();
+//                    // 서버와의 통신 형식을 맞추어 이미지파일을 어떻게 불러올 것인지 정해야함
+//                    // 그래서 이 부분 로직과 Scan_Res_Format을 작성해야함
+//                    // QR코드를 스캔한 뒤, 액티비티를 만들고 이미지와 현재위치 정보를 인텐트로 넘겨줘야함
+////                    if(response.body()!=""){
+////                        //Scan_Res_Format result=response.body();
+////                    }
+//                }
+//            }
+//            @Override
+//            public void onFailure(Call<Scan_Res_Format> call, Throwable t) {
+//                Toast.makeText(Main_menu.this, t.toString(), Toast.LENGTH_SHORT).show();
+//            }
+//        });
     }
 }
