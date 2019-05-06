@@ -6,6 +6,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.ShapeDrawable;
 import android.graphics.drawable.shapes.OvalShape;
+import android.media.Image;
 import android.os.AsyncTask;
 import android.os.Environment;
 import android.os.Handler;
@@ -15,13 +16,15 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.View;
-import android.widget.Button;
 import android.widget.ImageButton;
-import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
+import com.kakao.kakaolink.v2.KakaoLinkResponse;
+import com.kakao.kakaolink.v2.KakaoLinkService;
+import com.kakao.message.template.LinkObject;
+import com.kakao.message.template.TextTemplate;
 import com.kakao.network.ErrorResult;
+import com.kakao.network.callback.ResponseCallback;
 import com.kakao.usermgmt.UserManagement;
 import com.kakao.usermgmt.callback.LogoutResponseCallback;
 import com.kakao.usermgmt.callback.MeV2ResponseCallback;
@@ -35,12 +38,14 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import de.hdodenhof.circleimageview.CircleImageView;
 
 public class Main_menu extends AppCompatActivity {
-    private ImageButton btn_drawer, btn_dot;
+    private ImageButton btn_drawer, btn_dot, btn_friend_add;
     private TextView text_name;
     private CircleImageView profile_image;
     private DrawerLayout drawer_layout;
@@ -77,6 +82,37 @@ public class Main_menu extends AppCompatActivity {
             @Override
             public void onClick(View v){
                 show();
+            }
+        });
+
+        btn_friend_add = (ImageButton)findViewById(R.id.friend_add);
+        btn_friend_add.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View v){
+
+                send_message();
+            }
+        });
+    }
+    private void send_message(){
+        TextTemplate params = TextTemplate.newBuilder(
+                "Where I am에서 "+ Nickname +"님이 친구 요청을 보냈습니다. 친구를 맺고 "+ Nickname +"님의 위치를 확인해보세요!",
+                LinkObject.newBuilder()
+                .setAndroidExecutionParams("key1=" + Nickname)
+                .build()).setButtonTitle("친구 요청 수락").build();
+
+        Map<String, String> serverCallbackArgs = new HashMap<String, String>();
+        serverCallbackArgs.put("user_id", "${current_user_id}");
+        serverCallbackArgs.put("product_id", "${shared_product_id}");
+
+        KakaoLinkService.getInstance().sendDefault(this, params, serverCallbackArgs, new ResponseCallback<KakaoLinkResponse>() {
+            @Override
+            public void onFailure(ErrorResult errorResult) {
+                Logger.e(errorResult.toString());
+            }
+            @Override
+            public void onSuccess(KakaoLinkResponse result) {
+                // 템플릿 밸리데이션과 쿼터 체크가 성공적으로 끝남. 톡에서 정상적으로 보내졌는지 보장은 할 수 없다. 전송 성공 유무는 서버콜백 기능을 이용하여야 한다.
             }
         });
     }

@@ -11,5 +11,7 @@
     <color name="colorWhite">#FFFFFF</color>
     <color name="colorWhiteGray">#F2F2F2</color>
     <color name="colorSoftGray">#E2E2E2</color>
+    <color name="colorBlackString">#424242</color>
+    <color name="colorGray">#BDBDBD</color>
 
 </resources>

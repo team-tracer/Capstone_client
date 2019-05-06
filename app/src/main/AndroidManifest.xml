@@ -18,25 +18,39 @@
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
+
+            </intent-filter>
+
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:host="@string/kakaolink_host"
+                    android:scheme="@string/kakao_scheme"/>
             </intent-filter>
         </activity>
 
-        <meta-data
-            android:name="com.kakao.sdk.AppKey"
-            android:value="@string/kakao_app_key" />
+        <activity android:name=".login">
 
-        <activity android:name=".login"></activity>
+        </activity>
 
         <activity
             android:name=".QRScanner"
             android:screenOrientation="fullSensor"
             android:stateNotNeeded="true"
             android:theme="@style/zxing_CaptureTheme"
-            android:windowSoftInputMode="stateAlwaysHidden"></activity>
+            android:windowSoftInputMode="stateAlwaysHidden">
+
+        </activity>
 
         <activity android:name=".Main_menu">
 
         </activity>
+
+        <meta-data android:name="com.kakao.sdk.AppKey" android:value="@string/kakao_app_key" />
+
     </application>
 
 </manifest>
