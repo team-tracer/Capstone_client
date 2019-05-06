@@ -14,11 +14,18 @@ import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.ImageButton;
+import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import com.google.zxing.integration.android.IntentIntegrator;
+import com.google.zxing.integration.android.IntentResult;
 import com.kakao.kakaolink.v2.KakaoLinkResponse;
 import com.kakao.kakaolink.v2.KakaoLinkService;
 import com.kakao.message.template.LinkObject;
@@ -32,6 +39,9 @@ import com.kakao.usermgmt.callback.UnLinkResponseCallback;
 import com.kakao.usermgmt.response.MeV2Response;
 import com.kakao.util.helper.log.Logger;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
@@ -43,12 +53,19 @@ import java.util.List;
 import java.util.Map;
 
 import de.hdodenhof.circleimageview.CircleImageView;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
 
 public class Main_menu extends AppCompatActivity {
     private ImageButton btn_drawer, btn_dot, btn_friend_add;
     private TextView text_name;
     private CircleImageView profile_image;
     private DrawerLayout drawer_layout;
+    private Button btn_scan;
+    private IntentIntegrator qrScan;
 
     String Nickname = "";
     String pImage = "";
@@ -93,7 +110,19 @@ public class Main_menu extends AppCompatActivity {
                 send_message();
             }
         });
+
+        btn_scan = (Button)findViewById(R.id.btn_scan);
+        qrScan = new IntentIntegrator(this);
+        btn_scan.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                qrScan.setPrompt("Scanning");
+                qrScan.initiateScan();
+            }
+        });
+
     }
+
     private void send_message(){
         TextTemplate params = TextTemplate.newBuilder(
                 "Where I am에서 "+ Nickname +"님이 친구 요청을 보냈습니다. 친구를 맺고 "+ Nickname +"님의 위치를 확인해보세요!",
@@ -316,5 +345,48 @@ public class Main_menu extends AppCompatActivity {
         final Intent intent = new Intent(this, login.class);
         startActivity(intent);
         finish();
+    }
+    protected void onActivityResult(int requestCode, int resultCode, Intent data){
+        IntentResult result=IntentIntegrator.parseActivityResult(requestCode,resultCode,data);
+        if(result!=null){
+            if(result.getContents()==null){
+                Toast.makeText(Main_menu.this, "취소!", Toast.LENGTH_SHORT).show();
+            }
+            else{
+                Toast.makeText(Main_menu.this,"스캔완료!", Toast.LENGTH_SHORT).show();
+                try{
+                    JSONObject obj=new JSONObject(result.getContents());
+                    req_map(obj.getString("imageUrl"),obj.getInt("posX"),obj.getInt("posY"));
+                }catch (JSONException e){
+                    e.printStackTrace();
+                }
+            }
+
+        }else{
+            super.onActivityResult(requestCode,resultCode,data);
+        }
+    }
+    public void req_map(final String url,final Integer pos_x, final Integer pos_y) {
+        Retrofit retrofit= new Retrofit.Builder()
+                .baseUrl(RetroApi.BASEURL).addConverterFactory(GsonConverterFactory.create()).build();
+        RetroApi apiService=retrofit.create(RetroApi.class);
+        Call<Map_Res> res=apiService.loadMap("highTech_1st.jpg",10,20);
+        res.enqueue(new Callback<Map_Res>() {
+            @Override
+            public void onResponse(Call<Map_Res> call, final Response<Map_Res> response) {
+                if(response.isSuccessful()){
+                    Intent intent=new Intent(getApplicationContext(), Navi_activity.class);
+                    intent.putExtra("imgPath",response.body().getPath());
+                    intent.putExtra("posX",response.body().getPosX());
+                    intent.putExtra("posY",response.body().getPosY());
+                    startActivity(intent);
+                }
+            }
+            @Override
+            public void onFailure(Call<Map_Res> call, Throwable t) {
+                Log.e("networking err",t.toString());
+                Toast.makeText(getApplicationContext(),"fuck",Toast.LENGTH_LONG);
+            }
+        });
     }
 }
