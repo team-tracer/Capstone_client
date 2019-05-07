@@ -66,6 +66,7 @@ public class Main_menu extends AppCompatActivity {
     private DrawerLayout drawer_layout;
     private Button btn_scan;
     private IntentIntegrator qrScan;
+    private ListView friend_list;
 
     String Nickname = "";
     String pImage = "";
@@ -120,9 +121,18 @@ public class Main_menu extends AppCompatActivity {
                 qrScan.initiateScan();
             }
         });
-
+        set_friendlist();
     }
+    private void set_friendlist(){
+        final ArrayList<String> items = new ArrayList<>();
+        items.add("임태현");
+        items.add("류동현");
+        items.add("홍길동");
+        final ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, items);
 
+        friend_list = (ListView) findViewById(R.id.friend_list);
+        friend_list.setAdapter(adapter);
+    }
     private void send_message(){
         TextTemplate params = TextTemplate.newBuilder(
                 "Where I am에서 "+ Nickname +"님이 친구 요청을 보냈습니다. 친구를 맺고 "+ Nickname +"님의 위치를 확인해보세요!",
