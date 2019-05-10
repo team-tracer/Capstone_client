@@ -130,13 +130,6 @@ public class Main_menu extends AppCompatActivity implements ListViewBtnAdapter.L
             public void onClick(View v){
                 Toast.makeText(Main_menu.this, "리프레쉬!", Toast.LENGTH_SHORT).show();
 
-                Bitmap thumnail = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.thumb_talk);
-                ListViewItem item;
-                // 아이템 생성.
-                item = new ListViewItem();
-                item.setProfile_image(thumnail);
-                item.setNickname("트레이서");
-                items.add(item);
                 adapter.notifyDataSetChanged();
             }
         });
@@ -192,51 +185,22 @@ public class Main_menu extends AppCompatActivity implements ListViewBtnAdapter.L
         Bitmap thumnail = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.thumb_talk);
         if (list == null) {
             list = new ArrayList<ListViewItem>() ;
+            Retrofit retrofit = new Retrofit.Builder()
+                    .baseUrl(RetroApi.BASEURL).addConverterFactory(GsonConverterFactory.create()).build();
+            RetroApi apiService = retrofit.create(RetroApi.class);
+            Call<List<ListViewItem>> res = apiService.loadFrd(Long.toString(userID));
+            res.enqueue(new Callback<List<ListViewItem>>() {
+                @Override
+                public void onResponse(Call<List<ListViewItem>> call, Response<List<ListViewItem>> response) {
+
+                }
+
+                @Override
+                public void onFailure(Call<List<ListViewItem>> call, Throwable t) {
+
+                }
+            });
         }
-
-
-        // 아이템 생성.
-        item = new ListViewItem();
-        item.setProfile_image(thumnail);
-        item.setNickname("홍길동");
-        list.add(item);
-
-        item = new ListViewItem();
-        item.setProfile_image(thumnail);
-        item.setNickname("지휘찬");
-        list.add(item);
-
-        item = new ListViewItem();
-        item.setProfile_image(thumnail);
-        item.setNickname("임태현");
-        list.add(item);
-
-        item = new ListViewItem();
-        item.setProfile_image(thumnail);
-        item.setNickname("류동현");
-        list.add(item);
-
-        item = new ListViewItem();
-        item.setProfile_image(thumnail);
-        item.setNickname("류동현");
-        list.add(item);
-        item = new ListViewItem();
-        item.setProfile_image(thumnail);
-        item.setNickname("류동현");
-        list.add(item);
-        item = new ListViewItem();
-        item.setProfile_image(thumnail);
-        item.setNickname("류동현");
-        list.add(item);
-        item = new ListViewItem();
-        item.setProfile_image(thumnail);
-        item.setNickname("류동현");
-        list.add(item);
-        item = new ListViewItem();
-        item.setProfile_image(thumnail);
-        item.setNickname("류동현");
-        list.add(item);
-
         return true;
     }
     private void show()

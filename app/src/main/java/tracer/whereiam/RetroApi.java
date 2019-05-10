@@ -1,6 +1,8 @@
 package tracer.whereiam;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 import retrofit2.Call;
 import retrofit2.http.Field;
@@ -26,4 +28,8 @@ public interface RetroApi {
     @FormUrlEncoded
     @POST("/post/acceptFrd")
     Call<Frd_Res> acceptFrd(@Field("fromID") String id1, @Field("toID") String id2);
+
+    @FormUrlEncoded
+    @POST("/post/loadFrd")
+    Call<List<ListViewItem>> loadFrd(@Field("req_id") String id);
 }

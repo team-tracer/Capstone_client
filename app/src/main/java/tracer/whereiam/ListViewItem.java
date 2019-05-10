@@ -1,23 +1,31 @@
 package tracer.whereiam;
 
-import android.graphics.Bitmap;
-
-import de.hdodenhof.circleimageview.CircleImageView;
-
 public class ListViewItem {
-    private Bitmap profile_image;
+    private String profile_image;
     private String nickname;
+    private String userID;
 
-    public void setProfile_image(Bitmap civ){
-        profile_image = civ;
+    public String getProfile_image() {
+        return profile_image;
     }
-    public void setNickname(String text){
-        nickname = text;
+
+    public void setProfile_image(String profile_image) {
+        this.profile_image = profile_image;
     }
-    public Bitmap getProfile_image(){
-        return this.profile_image;
+
+    public String getNickname() {
+        return nickname;
     }
-    public String getNickname(){
-        return this.nickname;
+
+    public void setNickname(String nickname) {
+        this.nickname = nickname;
+    }
+
+    public String getUserID() {
+        return userID;
+    }
+
+    public void setUserID(String userID) {
+        this.userID = userID;
     }
 }
