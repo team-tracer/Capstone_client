@@ -13,5 +13,6 @@
     <color name="colorSoftGray">#E2E2E2</color>
     <color name="colorBlackString">#424242</color>
     <color name="colorGray">#BDBDBD</color>
+    <color name="colorSoftRed">#F11C1C</color>
 
 </resources>
