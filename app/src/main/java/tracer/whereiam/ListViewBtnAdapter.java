@@ -9,6 +9,11 @@ import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.TextView;
 
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.resource.drawable.GlideDrawable;
+import com.bumptech.glide.request.animation.GlideAnimation;
+import com.bumptech.glide.request.target.SimpleTarget;
+
 import java.util.ArrayList;
 
 import de.hdodenhof.circleimageview.CircleImageView;
@@ -52,9 +57,17 @@ public class ListViewBtnAdapter extends ArrayAdapter implements View.OnClickList
 
         // Data Set(listViewItemList)에서 position에 위치한 데이터 참조 획득
         final ListViewItem listViewItem = (ListViewItem) getItem(position);
-
-        // 아이템 내 각 위젯에 데이터 반영
-        friend_profile.setImageBitmap(listViewItem.getProfile_image());
+        if(listViewItem.getProfile_image() == null){
+            friend_profile.setImageResource(R.drawable.thumb_talk);
+        }
+        else {
+            Glide.with(getContext()).load(listViewItem.getProfile_image()).into(new SimpleTarget<GlideDrawable>() {
+                @Override
+                public void onResourceReady(GlideDrawable resource, GlideAnimation<? super GlideDrawable> glideAnimation) {
+                    friend_profile.setImageDrawable(resource);
+                }
+            });
+        }
         friend_nick.setText(listViewItem.getNickname());
 
         ImageButton btn_delete = (ImageButton) convertView.findViewById(R.id.btn_delete);

@@ -4,15 +4,8 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.Drawable;
-import android.graphics.drawable.ShapeDrawable;
-import android.graphics.drawable.shapes.OvalShape;
-import android.media.Image;
-import android.os.AsyncTask;
-import android.os.Environment;
-import android.os.Handler;
-import android.support.v4.content.ContextCompat;
+import android.print.PrinterId;
+import android.support.annotation.NonNull;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
@@ -20,7 +13,6 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ListView;
@@ -49,11 +41,6 @@ import com.kakao.util.helper.log.Logger;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -96,10 +83,27 @@ public class Main_menu extends AppCompatActivity implements ListViewBtnAdapter.L
         profile_image = (CircleImageView)findViewById(R.id.profileImage);
 
         btn_drawer = (ImageButton)findViewById(R.id.btn_drawer);
+        drawer_layout = (DrawerLayout) findViewById(R.id.drawer) ;
+        DrawerLayout.DrawerListener myDrawerListener = new DrawerLayout.DrawerListener() {
+            @Override
+            public void onDrawerSlide(@NonNull View view, float v) {  }
+
+            @Override
+            public void onDrawerOpened(@NonNull View view) {
+                adapter.notifyDataSetChanged();
+            }
+
+            @Override
+            public void onDrawerClosed(@NonNull View view) { }
+
+            @Override
+            public void onDrawerStateChanged(int i) { }
+        };
+        drawer_layout.setDrawerListener(myDrawerListener);
+
         btn_drawer.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View v){
-                drawer_layout = (DrawerLayout) findViewById(R.id.drawer) ;
                 if (!drawer_layout.isDrawerOpen(Gravity.LEFT)) {
                     drawer_layout.openDrawer(Gravity.LEFT);
                 }
@@ -108,7 +112,7 @@ public class Main_menu extends AppCompatActivity implements ListViewBtnAdapter.L
                 }
             }
         });
-
+        friend_list = (ListView) findViewById(R.id.friend_list);
         btn_dot = (ImageButton)findViewById(R.id.btn_dot);
         btn_dot.setOnClickListener(new View.OnClickListener(){
             @Override
@@ -128,9 +132,8 @@ public class Main_menu extends AppCompatActivity implements ListViewBtnAdapter.L
         btn_refresh.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View v){
-                Toast.makeText(Main_menu.this, "리프레쉬!", Toast.LENGTH_SHORT).show();
-
-                adapter.notifyDataSetChanged();
+                refresh_friendlist();
+                Toast.makeText(Main_menu.this, "친구 목록 갱신!", Toast.LENGTH_SHORT).show();
             }
         });
         btn_scan = (Button)findViewById(R.id.btn_scan);
@@ -142,19 +145,36 @@ public class Main_menu extends AppCompatActivity implements ListViewBtnAdapter.L
                 qrScan.initiateScan();
             }
         });
-        set_friendlist();
+    }
+    private void refresh_friendlist(){
+        items.clear();
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl(RetroApi.BASEURL).addConverterFactory(GsonConverterFactory.create()).build();
+        RetroApi apiService = retrofit.create(RetroApi.class);
+        Call<List<ListViewItem>> res = apiService.loadFrd(Long.toString(userID));
+        res.enqueue(new Callback<List<ListViewItem>>() {
+            @Override
+            public void onResponse(Call<List<ListViewItem>> call, Response<List<ListViewItem>> response) {
+                List<ListViewItem> friend_list = response.body();
+                for(int i = 0; i < friend_list.size(); i++){
+                    ListViewItem item = new ListViewItem();
+                    item.setProfile_image(friend_list.get(i).getProfile_image());
+                    item.setNickname(friend_list.get(i).getNickname());
+                    item.setUserID(friend_list.get(i).getUserID());
+                    items.add(item);
+                }
+                adapter.notifyDataSetChanged();
+            }
+            @Override
+            public void onFailure(Call<List<ListViewItem>> call, Throwable t) {
+                Logger.e("friend data receive error");
+            }
+        });
     }
     private void set_friendlist(){
         items = new ArrayList<ListViewItem>() ;
-
-        // items 로드.
-        loadItemsFromDB(items);
-
-        // Adapter 생성
+        loadItemsFromDB();
         adapter = new ListViewBtnAdapter(this, R.layout.listview_item, items, this) ;
-
-        // 리스트뷰 참조 및 Adapter달기
-        friend_list = (ListView) findViewById(R.id.friend_list);
         friend_list.setAdapter(adapter);
     }
     private void send_message(){
@@ -179,12 +199,8 @@ public class Main_menu extends AppCompatActivity implements ListViewBtnAdapter.L
             }
         });
     }
-    public boolean loadItemsFromDB(ArrayList<ListViewItem> list) {
-        ListViewItem item;
-
-        Bitmap thumnail = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.thumb_talk);
-        if (list == null) {
-            list = new ArrayList<ListViewItem>() ;
+    public boolean loadItemsFromDB() {
+        if (items.isEmpty()) {
             Retrofit retrofit = new Retrofit.Builder()
                     .baseUrl(RetroApi.BASEURL).addConverterFactory(GsonConverterFactory.create()).build();
             RetroApi apiService = retrofit.create(RetroApi.class);
@@ -192,12 +208,18 @@ public class Main_menu extends AppCompatActivity implements ListViewBtnAdapter.L
             res.enqueue(new Callback<List<ListViewItem>>() {
                 @Override
                 public void onResponse(Call<List<ListViewItem>> call, Response<List<ListViewItem>> response) {
-
+                    List<ListViewItem> friend_list = response.body();
+                    for(int i = 0; i < friend_list.size(); i++){
+                        ListViewItem item = new ListViewItem();
+                        item.setProfile_image(friend_list.get(i).getProfile_image());
+                        item.setNickname(friend_list.get(i).getNickname());
+                        item.setUserID(friend_list.get(i).getUserID());
+                        items.add(item);
+                    }
                 }
-
                 @Override
                 public void onFailure(Call<List<ListViewItem>> call, Throwable t) {
-
+                    Logger.e("friend data receive error");
                 }
             });
         }
@@ -288,9 +310,6 @@ public class Main_menu extends AppCompatActivity implements ListViewBtnAdapter.L
         });
     }
 
-    //pImgBtn부분//
-    Handler handler = new Handler();    //카카오톡 이미지 연동 시 사용할 핸들러입니다!
-    //이미지 연동
     public void LinkImage(){
         if(pImage == null){
             profile_image.setImageResource(R.drawable.thumb_talk);
@@ -304,7 +323,6 @@ public class Main_menu extends AppCompatActivity implements ListViewBtnAdapter.L
             });
         }
     }
-
 
     private void requestMe() {
         List<String> keys = new ArrayList<>();
@@ -347,9 +365,9 @@ public class Main_menu extends AppCompatActivity implements ListViewBtnAdapter.L
                             if(response.isSuccessful()) {
                                 if(response.body().getType()==200) {
                                     Toast.makeText(Main_menu.this, response.body().getFromName() + "와 친구가 되었습니다.", Toast.LENGTH_SHORT).show();
-                                }else if(response.body().getType()==404){
+                                } else if(response.body().getType()==404){
                                     Toast.makeText(Main_menu.this, "이미 추가된 사용자입니다.", Toast.LENGTH_SHORT).show();
-                                }else{
+                                } else{
                                     Toast.makeText(Main_menu.this, "같은 사용자를 친구할 수 없습니다.", Toast.LENGTH_SHORT).show();
                                 }
                             }
@@ -377,6 +395,7 @@ public class Main_menu extends AppCompatActivity implements ListViewBtnAdapter.L
                     }
                 });
                 LinkImage();
+                set_friendlist();
             }
         });
     }
@@ -401,7 +420,6 @@ public class Main_menu extends AppCompatActivity implements ListViewBtnAdapter.L
                     e.printStackTrace();
                 }
             }
-
         }else{
             super.onActivityResult(requestCode,resultCode,data);
         }

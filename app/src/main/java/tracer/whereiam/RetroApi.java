@@ -8,7 +8,9 @@ import retrofit2.Call;
 import retrofit2.http.Field;
 import retrofit2.http.FieldMap;
 import retrofit2.http.FormUrlEncoded;
+import retrofit2.http.GET;
 import retrofit2.http.POST;
+import retrofit2.http.Query;
 
 public interface RetroApi {
     final static String BASEURL="http://13.209.43.170:8000";
@@ -29,7 +31,6 @@ public interface RetroApi {
     @POST("/post/acceptFrd")
     Call<Frd_Res> acceptFrd(@Field("fromID") String id1, @Field("toID") String id2);
 
-    @FormUrlEncoded
-    @POST("/post/loadFrd")
-    Call<List<ListViewItem>> loadFrd(@Field("req_id") String id);
+    @GET("/get/loadFrd")
+    Call<List<ListViewItem>> loadFrd(@Query("id") String id);
 }
