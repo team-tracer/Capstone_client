@@ -33,4 +33,8 @@ public interface RetroApi {
 
     @GET("/get/loadFrd")
     Call<List<ListViewItem>> loadFrd(@Query("id") String id);
+
+    @FormUrlEncoded
+    @POST("/post/delFrd")
+    Call<Void> delFrd(@Field("userID") String id, @Field("delIdx") Integer idx);
 }

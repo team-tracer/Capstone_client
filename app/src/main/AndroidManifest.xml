@@ -14,12 +14,15 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme.NoActionBar"
         android:usesCleartextTraffic="true">
-        <activity android:name=".Loading">
+        <activity android:name=".Map">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+        </activity>
+        <activity android:name=".Loading">
+
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
 
@@ -31,9 +34,10 @@
                     android:scheme="@string/kakao_scheme" />
             </intent-filter>
         </activity>
-        <activity android:name=".login"></activity>
-        <activity android:name=".Main_menu"></activity>
-        <activity android:name=".Navi_activity"></activity>
+        <activity android:name=".login" />
+        <activity android:name=".Main_menu" />
+        <activity android:name=".Navi_activity" />
+
         <meta-data
             android:name="com.kakao.sdk.AppKey"
             android:value="@string/kakao_app_key" />

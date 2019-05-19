@@ -69,7 +69,42 @@ public class Main_menu extends AppCompatActivity implements ListViewBtnAdapter.L
     long userID = 0;
     @Override
     public void onListBtnClick(int position) {
-        Toast.makeText(this, Integer.toString(position+1) + " Item is selected..", Toast.LENGTH_SHORT).show() ;
+        final int idx = position;
+        new AlertDialog.Builder(this)
+                .setMessage("정말 삭제하시겠습니까?")
+                .setPositiveButton(getString(R.string.com_kakao_ok_button),
+                        new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                Retrofit retrofit = new Retrofit.Builder()
+                                        .baseUrl(RetroApi.BASEURL).addConverterFactory(GsonConverterFactory.create()).build();
+                                RetroApi apiService = retrofit.create(RetroApi.class);
+                                Call<Void> res = apiService.delFrd(Long.toString(userID), idx);
+                                res.enqueue(new Callback<Void>() {
+                                    @Override
+                                    public void onResponse(Call<Void> call, Response<Void> response) {
+                                        if(response.isSuccessful()){
+                                            Toast.makeText(Main_menu.this, "친구삭제 완료", Toast.LENGTH_SHORT).show();
+                                        }
+                                    }
+
+                                    @Override
+                                    public void onFailure(Call<Void> call, Throwable t) {
+
+                                    }
+                                });
+                                items.remove(idx);
+                                adapter.notifyDataSetChanged();
+                            }
+                        })
+                .setNegativeButton(getString(R.string.com_kakao_cancel_button),
+                        new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+
+                            }
+                        }).show();
+
     }
 
     @Override
