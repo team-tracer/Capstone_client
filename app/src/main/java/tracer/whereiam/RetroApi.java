@@ -1,6 +1,5 @@
 package tracer.whereiam;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
@@ -13,7 +12,7 @@ import retrofit2.http.POST;
 import retrofit2.http.Query;
 
 public interface RetroApi {
-    final static String BASEURL="http://13.209.43.170:8000";
+    static String BASEURL="http://13.209.43.170:8000";
 
     @FormUrlEncoded
     @POST("/post/loadMap")

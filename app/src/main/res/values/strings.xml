@@ -3,5 +3,6 @@
     <string name="kakao_app_key">d2c124818a1ad1802bb8f39952e39d82</string>
     <string name="kakao_scheme">kakaod2c124818a1ad1802bb8f39952e39d82</string>
     <string name="kakaolink_host">kakaolink</string>
+    <string name="fcm_api_key">AAAABB8ElwI:APA91bEXckJa9js483Vh2tLhssoajo4FC94T5Ef45zFI6rQER2OMraOtq0ccFvZddQhvoVPHjrdXkBs16xF-bVR66X_8wY0eyrVv6q7WdIlxgojiOQV2IbZfIpH_w275HZUDZ05C-z_z</string>
     <string name="default_notification_channel_id" translatable="false">fcm_default_channel</string>
 </resources>

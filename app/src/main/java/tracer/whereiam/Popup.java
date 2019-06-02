@@ -1,9 +1,9 @@
 package tracer.whereiam;
 
 import android.app.Activity;
+import android.content.DialogInterface;
 import android.content.Intent;
-import android.graphics.drawable.Drawable;
-import android.support.v7.app.AppCompatActivity;
+import android.support.v7.app.AlertDialog;
 import android.os.Bundle;
 import android.view.MotionEvent;
 import android.view.View;
@@ -13,11 +13,20 @@ import android.widget.Button;
 import android.widget.ListView;
 import android.widget.Toast;
 
-import com.kakao.util.helper.log.Logger;
+import org.json.JSONObject;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.ArrayList;
 
 public class Popup extends Activity {
+    private String userID;
+    private String nickname;
     ArrayList<ListViewItem> items;
     Button btn_list_close;
     ListView share_list;
@@ -30,7 +39,8 @@ public class Popup extends Activity {
 
         Intent intent= getIntent();
         items = (ArrayList<ListViewItem>) intent.getSerializableExtra("friend_list");
-        Logger.e("닉네임3: "+items.get(0).getNickname());
+        userID = intent.getStringExtra("my_id");
+        nickname = intent.getStringExtra("my_nick");
         adapter = new ShareListViewAdapter();
         share_list = (ListView) findViewById(R.id.share_list);
         share_list.setAdapter(adapter);
@@ -42,10 +52,30 @@ public class Popup extends Activity {
         share_list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView parent, View v, int position, long id) {
-                // get item
-                ListViewItem item = (ListViewItem) parent.getItemAtPosition(position);
-                String userID = item.getUserID();
-                Toast.makeText(Popup.this,"click: " + userID,Toast.LENGTH_LONG).show();
+                final ListViewItem item = (ListViewItem) parent.getItemAtPosition(position);
+                final String Nick = item.getNickname();
+                AlertDialog.Builder builder = new AlertDialog.Builder(Popup.this);
+                builder.setMessage(Nick + "님에게 내 위치를 공유하시겠습니까?");
+                builder.setPositiveButton("예",
+                        new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                new Thread(){
+                                    public void run(){
+                                        send("fhjFbkzg9HU:APA91bFyjUYZ2iyJHsOYgQqsj9GCEBrMaDOsBStk-hqlKtydBbA5CxnwX1PbjCPyBnoStvq71yOsSLlw2ecCqe_c5-Q1U7MFr-GF1QoQJsZ2C3ZnA_sV-7bARTLmSAHPEP9PdVGC-GzM",nickname,userID);
+                                    }
+                                }.start();
+                                Toast.makeText(Popup.this,Nick + "님에게 위치를 공유했습니다.",Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                builder.setNegativeButton("아니요",
+                        new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+
+                            }
+                        });
+                builder.show();
             }
         });
 
@@ -66,4 +96,51 @@ public class Popup extends Activity {
         return true;
     }
 
+    public String send(String to,  String Nickname, String ID) {
+        try {
+            final String apiKey = getString(R.string.fcm_api_key);
+            URL url = new URL("https://fcm.googleapis.com/fcm/send");
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+
+            conn.setRequestMethod("POST");
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setRequestProperty("Authorization", "key=" + apiKey);
+            conn.setDoInput(true);
+            conn.setDoOutput(true);
+
+            JSONObject message = new JSONObject();
+            message.put("to", to);
+            message.put("priority", "high");
+            JSONObject notification = new JSONObject();
+            notification.put("title", "위치 공유 알림");
+            notification.put("Nickname", Nickname);
+            notification.put("id", ID);
+            message.put("data", notification);
+
+            OutputStream os = conn.getOutputStream();
+            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(os, "UTF-8"));
+            writer.write(message.toString());
+            writer.flush();
+            writer.close();
+            os.close();
+
+            conn.connect();
+
+            int responseCode = conn.getResponseCode();
+
+            BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream(),"UTF-8"));
+            String inputLine;
+            StringBuffer response = new StringBuffer();
+
+            while ((inputLine = in.readLine()) != null) {
+                response.append(inputLine);
+            }
+            in.close();
+
+            return response.toString();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "error";
+    }
 }

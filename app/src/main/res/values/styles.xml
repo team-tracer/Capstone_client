@@ -16,5 +16,9 @@
         <item name="colorPrimaryDark">@color/colorDarkSky</item>
         <item name="android:windowDisablePreview">true</item>
     </style>
+    <style name="Theme.MyDialog" parent="Theme.AppCompat.DayNight.Dialog">
+        <item name="windowNoTitle">true</item>
+        <item name="windowActionBar">false</item>
+    </style>
 
 </resources>
