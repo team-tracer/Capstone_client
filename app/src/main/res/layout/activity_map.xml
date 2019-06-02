@@ -37,35 +37,52 @@
             android:id="@+id/map_image"
             android:layout_width="200dp"
             android:layout_height="200dp"
-            android:layout_centerInParent="true"
-            android:src="@drawable/map"/>
+            android:layout_centerInParent="true" />
     </RelativeLayout>
     <View
         android:layout_width="match_parent"
         android:layout_height="1dp"
         android:layout_centerInParent="true"
         android:background="@color/colorGray"/>
-    <RelativeLayout
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@color/colorWhiteGray"
-        android:layout_weight="2.5">
+        android:orientation="horizontal"
+        android:layout_weight="2.5"
+        android:background="@color/colorWhiteGray">
+        <Button
+            android:id="@+id/btn_scan"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="5dp"
+            android:layout_gravity="center"
+            android:layout_weight="1"
+            android:textSize="20dp"
+            android:paddingVertical="20dp"
+            android:paddingRight="10dp"
+            android:textStyle="bold"
+            android:text="위치 추적하기"
+            android:textColor="@color/colorWhite"
+            android:backgroundTint="@color/colorSky"
+            android:background="@drawable/corners"
+            android:drawableRight="@drawable/ic_qr_code">
+        </Button>
         <Button
             android:id="@+id/btn_share"
-            android:layout_width="320dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_centerInParent="true"
-            android:textSize="30dp"
+            android:layout_marginHorizontal="5dp"
+            android:layout_gravity="center"
+            android:layout_weight="1"
+            android:textSize="20dp"
+            android:paddingVertical="20dp"
+            android:paddingRight="10dp"
             android:textStyle="bold"
-            android:text="내 위치 공유하기"
+            android:text="위치 공유하기"
             android:textColor="@color/colorWhite"
-            android:backgroundTint="@color/colorSkyBlue"
+            android:backgroundTint="@color/colorDarkSky"
             android:background="@drawable/corners"
-            android:drawableRight="@drawable/ic_share"
-            android:paddingVertical="10dp"
-            android:paddingHorizontal="20dp">
+            android:drawableRight="@drawable/ic_share">
         </Button>
-    </RelativeLayout>
-
-
+    </LinearLayout>
 </LinearLayout>

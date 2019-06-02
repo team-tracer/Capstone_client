@@ -1,9 +1,36 @@
 package tracer.whereiam;
 
-public class ListViewItem {
+import android.os.Parcel;
+import android.os.Parcelable;
+
+public class ListViewItem implements Parcelable {
     private String profile_image;
     private String nickname;
     private String userID;
+
+    public ListViewItem() {
+        this.profile_image = "";
+        this.nickname = "";
+        this.userID = "";
+    }
+
+    protected ListViewItem(Parcel in) {
+        profile_image = in.readString();
+        nickname = in.readString();
+        userID = in.readString();
+    }
+
+    public static final Creator<ListViewItem> CREATOR = new Creator<ListViewItem>() {
+        @Override
+        public ListViewItem createFromParcel(Parcel in) {
+            return new ListViewItem(in);
+        }
+
+        @Override
+        public ListViewItem[] newArray(int size) {
+            return new ListViewItem[size];
+        }
+    };
 
     public String getProfile_image() {
         return profile_image;
@@ -27,5 +54,17 @@ public class ListViewItem {
 
     public void setUserID(String userID) {
         this.userID = userID;
+    }
+
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        dest.writeString(profile_image);
+        dest.writeString(nickname);
+        dest.writeString(userID);
     }
 }

@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "17700263682",
+    "firebase_url": "https://whereiam-7103b.firebaseio.com",
+    "project_id": "whereiam-7103b",
+    "storage_bucket": "whereiam-7103b.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:17700263682:android:5643d42153c287fe",
+        "android_client_info": {
+          "package_name": "tracer.whereiam"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "17700263682-0lraumvf4fodkbm94dnbnq9v30jjj80v.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "tracer.whereiam",
+            "certificate_hash": "c62aee52620805b1d4871764b8a7a0947773f830"
+          }
+        },
+        {
+          "client_id": "17700263682-pdnviv72l4ioe57psav5u8avk1es03ej.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBTEWWT-O_IB1aJoS2J6mzf7J8lWpL8pbQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "17700263682-pdnviv72l4ioe57psav5u8avk1es03ej.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

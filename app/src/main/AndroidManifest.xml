@@ -14,15 +14,28 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme.NoActionBar"
         android:usesCleartextTraffic="true">
-        <activity android:name=".Map">
+
+        <!--<service-->
+            <!--android:name=".MyFirebaseMessagingService">-->
+            <!--<intent-filter>-->
+                <!--<action android:name="com.google.firebase.MESSAGING_EVENT" />-->
+            <!--</intent-filter>-->
+        <!--</service>-->
+        <!--<service-->
+            <!--android:name=".MyFirebaseInstanceIDService">-->
+            <!--<intent-filter>-->
+                <!--<action android:name="com.google.firebase.INSTANCE_ID_EVENT" />-->
+            <!--</intent-filter>-->
+        <!--</service>-->
+        <!--<meta-data-->
+            <!--android:name="com.google.firebase.messaging.default_notification_channel_id"-->
+            <!--android:value="@string/default_notification_channel_id"/>-->
+        <activity android:name=".Loading" android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-        </activity>
-        <activity android:name=".Loading">
-
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
 
@@ -34,13 +47,13 @@
                     android:scheme="@string/kakao_scheme" />
             </intent-filter>
         </activity>
-        <activity android:name=".login" />
-        <activity android:name=".Main_menu" />
-        <activity android:name=".Navi_activity" />
-
+        <activity android:name=".login" android:screenOrientation="portrait"/>
+        <activity android:name=".Main_menu" android:screenOrientation="portrait"/>
+        <activity android:name=".Navi_activity" android:screenOrientation="portrait"/>
+        <activity android:name=".Map" android:screenOrientation="portrait"/>
+        <activity android:name=".Popup" android:theme="@android:style/Theme.DeviceDefault.Light.Dialog"/>
         <meta-data
             android:name="com.kakao.sdk.AppKey"
             android:value="@string/kakao_app_key" />
     </application>
-
 </manifest>

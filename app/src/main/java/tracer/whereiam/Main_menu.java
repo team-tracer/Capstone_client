@@ -2,9 +2,6 @@ package tracer.whereiam;
 
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.print.PrinterId;
 import android.support.annotation.NonNull;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AlertDialog;
@@ -58,8 +55,7 @@ public class Main_menu extends AppCompatActivity implements ListViewBtnAdapter.L
     private TextView text_name;
     private CircleImageView profile_image;
     private DrawerLayout drawer_layout;
-    private Button btn_scan;
-    private IntentIntegrator qrScan;
+    private Button btn_trace;
     private ListView friend_list;
     ListViewBtnAdapter adapter;
     ArrayList<ListViewItem> items;
@@ -104,7 +100,6 @@ public class Main_menu extends AppCompatActivity implements ListViewBtnAdapter.L
 
                             }
                         }).show();
-
     }
 
     @Override
@@ -171,14 +166,17 @@ public class Main_menu extends AppCompatActivity implements ListViewBtnAdapter.L
                 Toast.makeText(Main_menu.this, "친구 목록 갱신!", Toast.LENGTH_SHORT).show();
             }
         });
-        btn_scan = (Button)findViewById(R.id.btn_scan);
-        qrScan = new IntentIntegrator(this);
-        btn_scan.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                qrScan.setPrompt("Scanning");
-                qrScan.initiateScan();
-            }
+        btn_trace = (Button)findViewById(R.id.btn_trace);
+        btn_trace.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    for(int i =0; i < items.size();i++) {
+                        Logger.e("닉네임1: " + items.get(i).getNickname());
+                    }
+                    Intent intent2 = new Intent(getApplicationContext(), tracer.whereiam.Map.class);
+                    intent2.putExtra("friend_list", items);
+                    startActivity(intent2);
+                }
         });
     }
     private void refresh_friendlist(){
@@ -265,12 +263,12 @@ public class Main_menu extends AppCompatActivity implements ListViewBtnAdapter.L
         final List<String> ListItems = new ArrayList<>();
         ListItems.add("로그아웃");
         ListItems.add("앱 연결 해제");
-        final CharSequence[] items =  ListItems.toArray(new String[ListItems.size()]);
+        final CharSequence[] dotitems =  ListItems.toArray(new String[ListItems.size()]);
 
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setItems(items, new DialogInterface.OnClickListener() {
+        builder.setItems(dotitems, new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int pos) {
-                if(items[pos] == "로그아웃"){
+                if(dotitems[pos] == "로그아웃"){
                     onClickLogout();
                 }
                 else {
@@ -439,47 +437,5 @@ public class Main_menu extends AppCompatActivity implements ListViewBtnAdapter.L
         final Intent intent = new Intent(this, login.class);
         startActivity(intent);
         finish();
-    }
-    protected void onActivityResult(int requestCode, int resultCode, Intent data){
-        IntentResult result=IntentIntegrator.parseActivityResult(requestCode,resultCode,data);
-        if(result!=null){
-            if(result.getContents()==null){
-                Toast.makeText(Main_menu.this, "취소!", Toast.LENGTH_SHORT).show();
-            }
-            else{
-                Toast.makeText(Main_menu.this,"스캔완료!", Toast.LENGTH_SHORT).show();
-                try{
-                    JSONObject obj=new JSONObject(result.getContents());
-                    req_map(obj.getString("imageUrl"),obj.getInt("posX"),obj.getInt("posY"));
-                }catch (JSONException e){
-                    e.printStackTrace();
-                }
-            }
-        }else{
-            super.onActivityResult(requestCode,resultCode,data);
-        }
-    }
-    public void req_map(final String url,final Integer pos_x, final Integer pos_y) {
-        Retrofit retrofit= new Retrofit.Builder()
-                .baseUrl(RetroApi.BASEURL).addConverterFactory(GsonConverterFactory.create()).build();
-        RetroApi apiService=retrofit.create(RetroApi.class);
-        Call<Map_Res> res=apiService.loadMap("highTech_1st.jpg",10,20);
-        res.enqueue(new Callback<Map_Res>() {
-            @Override
-            public void onResponse(Call<Map_Res> call, final Response<Map_Res> response) {
-                if(response.isSuccessful()){
-                    Intent intent=new Intent(getApplicationContext(), Navi_activity.class);
-                    intent.putExtra("imgPath",response.body().getPath());
-                    intent.putExtra("posX",response.body().getPosX());
-                    intent.putExtra("posY",response.body().getPosY());
-                    startActivity(intent);
-                }
-            }
-            @Override
-            public void onFailure(Call<Map_Res> call, Throwable t) {
-                Log.e("networking err",t.toString());
-                Toast.makeText(getApplicationContext(),"fuck",Toast.LENGTH_LONG);
-            }
-        });
     }
 }
