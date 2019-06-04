@@ -66,13 +66,13 @@ public class ShareListViewAdapter extends BaseAdapter {
         share_friend_nick.setText(listViewItem.getNickname());
         return convertView;
     }
-    public void addItem(String profile_image, String nickname, String userID) {
+    public void addItem(String profile_image, String nickname, String userID, String token) {
         ListViewItem item = new ListViewItem();
 
         item.setUserID(userID);
         item.setNickname(nickname);
         item.setProfile_image(profile_image);
-
+        item.setToken(token);
         listViewItemList.add(item);
     }
 }

@@ -13,6 +13,8 @@ import android.widget.Button;
 import android.widget.ListView;
 import android.widget.Toast;
 
+import com.kakao.util.helper.log.Logger;
+
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
@@ -46,7 +48,7 @@ public class Popup extends Activity {
         share_list.setAdapter(adapter);
 
         for(int i = 0; i < items.size();i++){
-            adapter.addItem(items.get(i).getProfile_image(),items.get(i).getNickname(),items.get(i).getUserID());
+            adapter.addItem(items.get(i).getProfile_image(),items.get(i).getNickname(),items.get(i).getUserID(),items.get(i).getToken());
         }
 
         share_list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
@@ -54,6 +56,7 @@ public class Popup extends Activity {
             public void onItemClick(AdapterView parent, View v, int position, long id) {
                 final ListViewItem item = (ListViewItem) parent.getItemAtPosition(position);
                 final String Nick = item.getNickname();
+                final String friend_token = item.getToken();
                 AlertDialog.Builder builder = new AlertDialog.Builder(Popup.this);
                 builder.setMessage(Nick + "님에게 내 위치를 공유하시겠습니까?");
                 builder.setPositiveButton("예",
@@ -62,7 +65,7 @@ public class Popup extends Activity {
                             public void onClick(DialogInterface dialog, int which) {
                                 new Thread(){
                                     public void run(){
-                                        send("fhjFbkzg9HU:APA91bFyjUYZ2iyJHsOYgQqsj9GCEBrMaDOsBStk-hqlKtydBbA5CxnwX1PbjCPyBnoStvq71yOsSLlw2ecCqe_c5-Q1U7MFr-GF1QoQJsZ2C3ZnA_sV-7bARTLmSAHPEP9PdVGC-GzM",nickname,userID);
+                                        send(friend_token,nickname,userID);
                                     }
                                 }.start();
                                 Toast.makeText(Popup.this,Nick + "님에게 위치를 공유했습니다.",Toast.LENGTH_SHORT).show();

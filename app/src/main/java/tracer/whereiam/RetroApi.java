@@ -36,4 +36,8 @@ public interface RetroApi {
     @FormUrlEncoded
     @POST("/post/delFrd")
     Call<Void> delFrd(@Field("userID") String id, @Field("delIdx") Integer idx);
+
+    @FormUrlEncoded
+    @POST("/post/getToken")
+    Call<Void> getToken(@Field("userID") Long id, @Field("tokenID") String tid);
 }

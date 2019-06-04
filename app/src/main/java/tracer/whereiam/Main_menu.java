@@ -62,6 +62,7 @@ public class Main_menu extends AppCompatActivity implements ListViewBtnAdapter.L
     String Nickname = "";
     String pImage = "";
     long userID = 0;
+    String token;
     @Override
     public void onListBtnClick(int position) {
         final int idx = position;
@@ -167,30 +168,17 @@ public class Main_menu extends AppCompatActivity implements ListViewBtnAdapter.L
         });
         btn_trace = (Button)findViewById(R.id.btn_trace);
         btn_trace.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    Intent intent2 = new Intent(getApplicationContext(), tracer.whereiam.Map.class);
-                    intent2.putExtra("friend_list", items);
-                    intent2.putExtra("my_id",userID);
-                    intent2.putExtra("my_nick",Nickname);
-                    startActivity(intent2);
-                }
+            @Override
+            public void onClick(View v) {
+                Intent intent2 = new Intent(getApplicationContext(), tracer.whereiam.Map.class);
+                intent2.putExtra("friend_list", items);
+                intent2.putExtra("my_id",Long.toString(userID));
+                intent2.putExtra("my_nick",Nickname);
+//                    Toast.makeText(Main_menu.this, userID, Toast.LENGTH_SHORT).show();
+                startActivity(intent2);
+            }
         });
-        FirebaseInstanceId.getInstance().getInstanceId()
-                .addOnCompleteListener(new OnCompleteListener<InstanceIdResult>() {
-                    @Override
-                    public void onComplete(@NonNull Task<InstanceIdResult> task) {
-                        if (!task.isSuccessful()) {
-                            Log.w("tag", "getInstanceId failed", task.getException());
-                            return;
-                        }
 
-                        // Get new Instance ID token
-                        String token = task.getResult().getToken();
-
-                        Log.d("토큰: ", token);
-                    }
-                });
     }
     private void refresh_friendlist(){
         items.clear();
@@ -207,6 +195,7 @@ public class Main_menu extends AppCompatActivity implements ListViewBtnAdapter.L
                     item.setProfile_image(friend_list.get(i).getProfile_image());
                     item.setNickname(friend_list.get(i).getNickname());
                     item.setUserID(friend_list.get(i).getUserID());
+                    item.setToken(friend_list.get(i).getToken());
                     items.add(item);
                 }
                 adapter.notifyDataSetChanged();
@@ -227,8 +216,8 @@ public class Main_menu extends AppCompatActivity implements ListViewBtnAdapter.L
         TextTemplate params = TextTemplate.newBuilder(
                 "Where I am에서 "+ Nickname +"님이 친구 요청을 보냈습니다. 친구를 맺고 "+ Nickname +"님의 위치를 확인해보세요!",
                 LinkObject.newBuilder()
-                .setAndroidExecutionParams("key1=" + userID)
-                .build()).setButtonTitle("친구 요청 수락").build();
+                        .setAndroidExecutionParams("key1=" + userID)
+                        .build()).setButtonTitle("친구 요청 수락").build();
 
         Map<String, String> serverCallbackArgs = new HashMap<String, String>();
         serverCallbackArgs.put("user_id", "${current_user_id}");
@@ -260,6 +249,7 @@ public class Main_menu extends AppCompatActivity implements ListViewBtnAdapter.L
                         item.setProfile_image(friend_list.get(i).getProfile_image());
                         item.setNickname(friend_list.get(i).getNickname());
                         item.setUserID(friend_list.get(i).getUserID());
+                        item.setToken(friend_list.get(i).getToken());
                         items.add(item);
                     }
                 }
@@ -440,6 +430,35 @@ public class Main_menu extends AppCompatActivity implements ListViewBtnAdapter.L
                         Toast.makeText(Main_menu.this, t.toString(), Toast.LENGTH_SHORT).show();
                     }
                 });
+                if(token == null) {
+                    FirebaseInstanceId.getInstance().getInstanceId()
+                            .addOnCompleteListener(new OnCompleteListener<InstanceIdResult>() {
+                                @Override
+                                public void onComplete(@NonNull Task<InstanceIdResult> task) {
+                                    if (!task.isSuccessful()) {
+                                        Log.w("tag", "getInstanceId failed", task.getException());
+                                        return;
+                                    }
+
+                                    // Get new Instance ID token
+                                    token = task.getResult().getToken();
+                                    Retrofit retrofit = new Retrofit.Builder()
+                                            .baseUrl(RetroApi.BASEURL).addConverterFactory(GsonConverterFactory.create()).build();
+                                    RetroApi apiService = retrofit.create(RetroApi.class);
+                                    Call<Void> res = apiService.getToken(userID,token);
+                                    res.enqueue(new Callback<Void>() {
+                                        @Override
+                                        public void onResponse(Call<Void> call, Response<Void> response) {
+
+                                        }
+                                        @Override
+                                        public void onFailure(Call<Void> call, Throwable t) {
+                                        }
+                                    });
+                                    Log.d("토큰: ", token);
+                                }
+                            });
+                }
                 LinkImage();
                 set_friendlist();
             }

@@ -55,8 +55,6 @@ public class Map extends AppCompatActivity implements Serializable {
     private String userID;
     private String Nickname;
     ArrayList<ListViewItem> items;
-    Integer myPos_x, myPos_y;
-    BitmapDrawable map;
     RelativeLayout map_layout;
     RelativeLayout.LayoutParams layoutParams;
 
@@ -78,7 +76,7 @@ public class Map extends AppCompatActivity implements Serializable {
     private int cnt1 = 0;
     private double direction;
     int flag = 1;
-
+boolean flag1 = false;
     float[] mR = new float[9];
     float[] mI = new float[9];
     float[] mV = new float[9];
@@ -87,12 +85,15 @@ public class Map extends AppCompatActivity implements Serializable {
     float[] mGeometric = null;
     final static int FREQ = 1;
     String[] dir_str = {"서", "남", "동", "북"};
+//    String[] dir_str={"북", "동북", "동", "동남","남","남서","서","북서"};
 
     KalmanFilter accL_kal;
     KalmanFilter gyrO_kal;
-    int[] dx = {-1, 0, 1, 0};
-    int[] dy = {0, 1, 0, -1}; // 0서, 1남, 2동, 3북
-    int state;
+    int[] dx={-1,0,1,0};
+    int[] dy={0,1,0,-1};
+//    int[] dx = {0,1,1,1,0,-1,-1,-1};
+//    int[] dy = {-1,-1,0,1,1,1,0,-1}; // 0서, 1남, 2동, 3북
+    int state=0;
     private Socket socket;
 
     @Override
@@ -100,7 +101,7 @@ public class Map extends AppCompatActivity implements Serializable {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_map);
 
-        Intent intent= getIntent();
+        final Intent intent= getIntent();
         items = (ArrayList<ListViewItem>) intent.getSerializableExtra("friend_list");
         userID = intent.getStringExtra("my_id");
         Nickname = intent.getStringExtra("my_nick");
@@ -112,9 +113,9 @@ public class Map extends AppCompatActivity implements Serializable {
         gyroSensor = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
         magSensor = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
 
-        accL = new accListener();
+//        accL = new accListener();
         gyroL = new gyroListener();
-        magL = new magListener();
+//        magL = new magListener();
         deteT = new deteTListener();
         accL_kal = new KalmanFilter();
         gyrO_kal = new KalmanFilter();
@@ -164,6 +165,7 @@ public class Map extends AppCompatActivity implements Serializable {
                 Toast.makeText(Map.this,"스캔완료!", Toast.LENGTH_SHORT).show();
                 try{
                     JSONObject obj=new JSONObject(result.getContents());
+                    map_name.setText(obj.getString("map_name"));
                     req_map(obj.getString("imageUrl"),obj.getInt("posX"),obj.getInt("posY"));
                     state=obj.getInt("dir");
                 }catch (JSONException e){
@@ -175,6 +177,11 @@ public class Map extends AppCompatActivity implements Serializable {
         }
     }
     public void req_map(final String url, final Integer pos_x, final Integer pos_y) {
+        layoutParams = new RelativeLayout.LayoutParams(30, 30);
+        layoutParams.leftMargin = (int) (map_layout.getWidth() * ((float) pos_x / 1000)); // 233
+        layoutParams.topMargin = (int) (map_layout.getHeight() * ((float) pos_y / 1000)); // 255
+        myPoint.bringToFront();
+
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl(RetroApi.BASEURL).addConverterFactory(GsonConverterFactory.create()).build();
         RetroApi apiService = retrofit.create(RetroApi.class);
@@ -184,11 +191,11 @@ public class Map extends AppCompatActivity implements Serializable {
             public void onResponse(Call<Map_Res> call, final Response<Map_Res> response) {
                 if (response.isSuccessful()) {
                     try {
-                        socket= IO.socket("http://165.246.242.150:8000");
-//                        socket=IO.socket(RetroApi.BASEURL);
-//                        socket.on(Socket.EVENT_CONNECT, onConnect);
-//                        socket.on(Socket.EVENT_ERROR,onError);
-//                        socket.on(Socket.EVENT_DISCONNECT, onDisconnect);
+//                        socket= IO.socket("http://165.246.242.150:8000");
+                        socket=IO.socket(RetroApi.BASEURL);
+                        socket.on(Socket.EVENT_CONNECT, onConnect);
+                        socket.on(Socket.EVENT_ERROR,onError);
+                        socket.on(Socket.EVENT_DISCONNECT, onDisconnect);
                         socket.connect();
                     }catch(URISyntaxException e){
                         e.printStackTrace();
@@ -202,20 +209,6 @@ public class Map extends AppCompatActivity implements Serializable {
                             map_layout.requestLayout();
                         }
                     });
-//                    Glide.with(getApplicationContext()).load(imgPath).into(new SimpleTarget<GlideDrawable>() {
-//                        @Override
-//                        public void onResourceReady(GlideDrawable resource, GlideAnimation<? super GlideDrawable> glideAnimation) {
-//                            map_layout.setBackgroundDrawable(resource);
-//                            map_layout.requestLayout();
-//                        }
-//                    });
-
-                    layoutParams = new RelativeLayout.LayoutParams(30, 30);
-                    layoutParams.leftMargin = (int) (map_layout.getWidth() * ((float) pos_x / 1000)); // 233
-                    layoutParams.topMargin = (int) (map_layout.getHeight() * ((float) pos_y / 1000)); // 255
-                    myPoint.bringToFront();
-//                    map_layout.removeAllViews();
-//                    map_layout.requestLayout();
                     map_layout.addView(myPoint, layoutParams);
                 }
             }
@@ -280,12 +273,28 @@ public class Map extends AppCompatActivity implements Serializable {
             if (event.sensor.getType() == Sensor.TYPE_STEP_DETECTOR) {
                 if (event.values[0] == 1.0f)//      1 step detect시
                 {
-                    Integer length = 7;
-                    layoutParams.leftMargin += (dx[state] * length);
-                    layoutParams.topMargin += (dy[state] * length);
+//                    Toast.makeText(Map.this, "hi", Toast.LENGTH_SHORT).show();
+                    JSONObject obj=new JSONObject();
+                    Integer len=70;
+//                    if(대각선 이동일 경우){
+//                        len=Math.sqrt(len);
+//                }
+                    Integer x_len=(int)(map_layout.getWidth()*((float)len/10000));
+                    Integer y_len=(int)(map_layout.getHeight()*((float)len/10000));
+//                    Integer length = 15;
+//                    (int) (map_layout.getWidth() * ((float) pos_x / 1000)); // 233
+                    layoutParams.leftMargin += (dx[state] * x_len);
+                    layoutParams.topMargin += (dy[state] * y_len);
                     myPoint.setLayoutParams(layoutParams);
-                    //mStepDetector++;//      걸음수 증가
-                    //StepDetector.setText("Step Detect : " + String.valueOf(mStepDetector));
+                    try {
+                        obj.accumulate("id",userID);
+                        obj.accumulate("posX", layoutParams.leftMargin);
+                        obj.accumulate("posY",layoutParams.topMargin);
+                        socket.emit("stepDetection",obj);
+                    }catch (Exception e){
+                        e.printStackTrace();
+                    }
+
                 }
             }
         }
@@ -295,31 +304,73 @@ public class Map extends AppCompatActivity implements Serializable {
         }
     }
 
-    float sum;
-
-    private class accListener implements SensorEventListener {
-        public void onSensorChanged(SensorEvent event) {
-            double x, y, z;
-            //double temp[] = new double[10];
-            double energy;
-            x = event.values[0];
-            y = event.values[1];
-            z = event.values[2];
-            energy = Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2) + Math.pow(z, 2));
-
-            Log.d("SENSOR_value", "Acceleration changed.");
-
-            /*디스플레이가 하늘을 보게 두고 앞으로 나아갈때 속도가 증가*/
-            Log.d("SENSOR_values", "" + y);
-
-            Log.d("SENSOR_value", "  Acceleration X: " + x
-                    + ", Acceleration Y: " + y
-                    + ", Acceleration Z: " + z);
-        }
-
-        public void onAccuracyChanged(Sensor sensor, int accuracy) {
-        }
-    }
+//    int count = values.Step;
+//    private class accListener implements SensorEventListener {
+//
+//        private long lastTime;
+//        private float speed;
+//        private float lastX = 0;
+//        private float lastY = 0;
+//        private float lastZ = 0;
+//
+//        private float x, y, z;
+//        private static final double SHAKE_THRESHOLD = 78;
+//
+//        public void onSensorChanged(SensorEvent event) {
+//
+//            long currentTime = System.currentTimeMillis();
+//            long gabOfTime = (currentTime - lastTime);
+//
+//            if (gabOfTime > 100) {
+//                lastTime = currentTime;
+//                x = event.values[0];
+//                y = event.values[1];
+//                z = event.values[2];
+//                speed = Math.abs(x + y + z - lastX - lastY - lastZ) / gabOfTime * 3000;
+//
+//                if (speed > SHAKE_THRESHOLD && !flag1) {
+//
+//                    JSONObject obj=new JSONObject();
+//                    double len=55;
+////                    String[] dir_str={"북", "동북", "동", "동남","남","남서","서","북서"};
+////                    if(state==1 || state==3 || state==5 || state==7){
+////                        len=len/Math.sqrt(2);
+////                    }
+//                    Integer x_len=(int)(map_layout.getWidth()*(len/10000));
+//                    Integer y_len=(int)(map_layout.getHeight()*(len/10000));
+////                    Integer length = 15;
+////                    (int) (map_layout.getWidth() * ((float) pos_x / 1000)); // 233
+//                    layoutParams.leftMargin += (dx[state] * x_len);
+//                    layoutParams.topMargin += (dy[state] * y_len);
+//                    myPoint.setLayoutParams(layoutParams);
+//                    try {
+//                        obj.accumulate("id",userID);
+//                        obj.accumulate("posX", layoutParams.leftMargin);
+//                        obj.accumulate("posY",layoutParams.topMargin);
+//                        socket.emit("stepDetection",obj);
+//                    }catch (Exception e){
+//                        e.printStackTrace();
+//                    }
+//
+////                    values.Step = count++;
+////                    StepDetector2.setText("Step Detect accL: " + String.valueOf(values.Step));
+////                    mStepDistance = (0.8 * values.Step);//     걸음수 x 보폭
+////                    String cStepDistance = String.format("%.1f", mStepDistance);
+////                    StepDistance.setText("Moving Distance : " + String.valueOf(cStepDistance) + "m");
+//                }
+//                lastX = x;
+//                lastY = y;
+//                lastZ = z;
+//                //flag1 = true;
+//                //svm은 신호 벡터 크기
+//                //double svm = abs(event.values[0])+abs(event.values[1])+abs(event.values[2]);
+//            }
+//
+//        }
+//
+//        public void onAccuracyChanged(Sensor sensor, int accuracy) {
+//        }
+//    }
 
     Handler delayHandler = new Handler();
 
@@ -354,12 +405,138 @@ public class Map extends AppCompatActivity implements Serializable {
             } else {
                 flag = 1;
             }
-            map_name.setText(dir_str[state]);
+//            map_name.setText(dir_str[state]);
         }
 
         public void onAccuracyChanged(Sensor sensor, int accuracy) {
         }
     }
+    int pre_step = 0;
+
+//    private class gyroListener implements SensorEventListener {
+//        public void onSensorChanged(final SensorEvent event) {
+////            dir_str[0] = "북";
+////            dir_str[1] = "동북";
+////            dir_str[2] = "동";
+////            dir_str[3] = "동남";
+////            dir_str[4] = "남";
+////            dir_str[5] = "남서";
+////            dir_str[6] = "서";
+////            dir_str[7] = "북서";
+//            gyrO_kal.z_Din = event.values[1];
+//            direction = KalmanValue(gyrO_kal);
+//
+//            /*남 4*/
+//            if (direction > 2.45 && direction < -2.45) {
+//                if (flag == 1) {
+//                    Toast.makeText(getApplicationContext(), "남", Toast.LENGTH_SHORT).show();
+//                    flag = 0;
+//                    state = (state + 4) % 8;
+//                    delayHandler.postDelayed(new Runnable() {
+//                        @Override
+//                        public void run() {
+//                            flag = 1;
+//                        }
+//                    }, 1000);
+//                }
+//            }
+//            /*서남 5*/
+//            else if (direction > 1.95 && direction < 2.45) {
+//                if (flag == 1) {
+//                    state = (state + 5) % 8;
+//                    flag = 0;
+//                    Toast.makeText(getApplicationContext(), "서남", Toast.LENGTH_SHORT).show();
+//                    delayHandler.postDelayed(new Runnable() {
+//                        @Override
+//                        public void run() {
+//                            flag = 1;
+//                        }
+//                    }, 1000);
+//                }
+//            }
+//            /*동남 3*/
+//            else if (direction < -1.95 && direction > -2.45) {
+//                if (flag == 1) {
+//                    state = (state + 3) % 8;
+//                    flag = 0;
+//                    Toast.makeText(getApplicationContext(), "동남", Toast.LENGTH_SHORT).show();
+//                    delayHandler.postDelayed(new Runnable() {
+//                        @Override
+//                        public void run() {
+//                            flag = 1;
+//                        }
+//                    }, 1000);
+//                }
+//            }
+//            /*서 6*/
+//            else if (direction > 0.65 && direction < 1.95) {
+//                if (flag == 1) {
+//                    state = (state + 6) % 8;
+//                    flag = 0;
+//                    Toast.makeText(getApplicationContext(), "서", Toast.LENGTH_SHORT).show();
+//                    delayHandler.postDelayed(new Runnable() {
+//                        @Override
+//                        public void run() {
+//                            flag = 1;
+//                        }
+//                    }, 1000);
+//                }
+//            }
+//            /*동 2*/
+//            else if (direction < -0.65 && direction > -1.95) {
+//                if (flag == 1) {
+//                    state = (state + 2) % 8;
+//                    flag = 0;
+//                    Toast.makeText(getApplicationContext(), "동", Toast.LENGTH_SHORT).show();
+//                    delayHandler.postDelayed(new Runnable() {
+//                        @Override
+//                        public void run() {
+//                            flag = 1;
+//                        }
+//                    }, 1000);
+//                }
+//            }
+//            /*서북 7*/
+//            else if (direction > 0.5 && direction < 0.65) {
+//                if (flag == 1) {
+//                    Toast.makeText(getApplicationContext(), "서북", Toast.LENGTH_SHORT).show();
+//                    flag = 0;
+//                    state = (state + 7) % 8;
+//                    delayHandler.postDelayed(new Runnable() {
+//                        @Override
+//                        public void run() {
+//                            flag = 1;
+//                        }
+//                    }, 1000);
+//                }
+//            }
+//            /*동북 1*/
+//            else if (direction < -0.5 && direction > -0.6) {
+//                if (flag == 1) {
+//                    state = (state + 1) % 8;
+//                    flag = 0;
+//                    Toast.makeText(getApplicationContext(), "동북", Toast.LENGTH_SHORT).show();
+//                    delayHandler.postDelayed(new Runnable() {
+//                        @Override
+//                        public void run() {
+//                            flag = 1;
+//                        }
+//                    }, 1000);
+//                }
+//            }
+//            else {
+//                flag = 1;
+//            }
+//            /*방향전환시에는 스텝카운터 증가를 막는다*/
+//            if (pre_step != state) flag1=true;
+//            else flag1 = false;
+//            pre_step = state;
+////            StepDirection.setText(dir_str[state]);
+//        }
+//
+//        public void onAccuracyChanged(Sensor sensor, int accuracy) {
+//        }
+//    }
 
 
     private class magListener implements SensorEventListener {
@@ -383,8 +560,28 @@ public class Map extends AppCompatActivity implements Serializable {
         @Override
         public void call(Object... args) {
             JSONObject obj=new JSONObject();
-//            obj.accumulate("id",)
-            socket.emit("test","hi");
+            try {
+                obj.accumulate("id", userID);
+                obj.accumulate("posX",layoutParams.leftMargin);
+                obj.accumulate("posY",layoutParams.topMargin);
+                socket.emit("stepDetection",obj);
+            }catch(Exception e){
+                e.printStackTrace();
+            }
+
         }
     };
+    private Emitter.Listener onDisconnect=new Emitter.Listener() {
+        @Override
+        public void call(Object... args) {
+            socket.emit("disconnect",userID);
+        }
+    };
+    private Emitter.Listener onError=new Emitter.Listener() {
+        @Override
+        public void call(Object... args) {
+            socket.emit("error",userID);
+        }
+    };
+
 }

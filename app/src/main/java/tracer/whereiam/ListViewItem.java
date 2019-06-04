@@ -7,6 +7,7 @@ public class ListViewItem implements Parcelable {
     private String profile_image;
     private String nickname;
     private String userID;
+    private String token;
 
     public ListViewItem() {
         this.profile_image = "";
@@ -18,6 +19,7 @@ public class ListViewItem implements Parcelable {
         profile_image = in.readString();
         nickname = in.readString();
         userID = in.readString();
+        token = in.readString();
     }
 
     public static final Creator<ListViewItem> CREATOR = new Creator<ListViewItem>() {
@@ -66,5 +68,14 @@ public class ListViewItem implements Parcelable {
         dest.writeString(profile_image);
         dest.writeString(nickname);
         dest.writeString(userID);
+        dest.writeString(token);
+    }
+
+    public String getToken() {
+        return token;
+    }
+
+    public void setToken(String token) {
+        this.token = token;
     }
 }
