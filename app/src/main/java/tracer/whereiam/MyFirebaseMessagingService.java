@@ -60,7 +60,9 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         String title = remoteMessage.getData().get("title");
         String Nick = remoteMessage.getData().get("Nickname");
         String id = remoteMessage.getData().get("id");
-        sendNotification(title, Nick, id);
+        String map_String = remoteMessage.getData().get("map_String");
+        String imgPath = remoteMessage.getData().get("imgPath");
+        sendNotification(title, Nick, id, map_String, imgPath);
     }
 
     private void scheduleJob() {
@@ -72,13 +74,17 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         Log.d(myFBTAG, "10초이내 처리됨");
     }
 
-    private void sendNotification(String title, String Nick, String id) {
+    private void sendNotification(String title, String Nick, String ID, String map_String, String imgPath) {
         if (title == null){
-            //제목이 없는 payload이면
-            title = "위치 공유 알림"; //기본제목을 적어 주자.
+            title = "위치 공유 알림";
         }
         Intent intent = new Intent(this, Map.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        intent.addFlags(intent.FLAG_ACTIVITY_SINGLE_TOP);
+        intent.putExtra("shared", "shared");
+        intent.putExtra("snd_ID",ID);
+        intent.putExtra("snd_map_String", map_String);
+        intent.putExtra("snd_imgPath", imgPath);
         PendingIntent pendingIntent = PendingIntent.getActivity(this, 0 /* Request code */, intent,
                 PendingIntent.FLAG_ONE_SHOT);
 

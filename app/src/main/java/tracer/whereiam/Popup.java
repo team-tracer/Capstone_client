@@ -13,8 +13,6 @@ import android.widget.Button;
 import android.widget.ListView;
 import android.widget.Toast;
 
-import com.kakao.util.helper.log.Logger;
-
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
@@ -29,6 +27,8 @@ import java.util.ArrayList;
 public class Popup extends Activity {
     private String userID;
     private String nickname;
+    private String map_String;
+    private String imgPath;
     ArrayList<ListViewItem> items;
     Button btn_list_close;
     ListView share_list;
@@ -43,6 +43,9 @@ public class Popup extends Activity {
         items = (ArrayList<ListViewItem>) intent.getSerializableExtra("friend_list");
         userID = intent.getStringExtra("my_id");
         nickname = intent.getStringExtra("my_nick");
+        map_String = intent.getStringExtra("map_String");
+        imgPath = intent.getStringExtra("imgPath");
+
         adapter = new ShareListViewAdapter();
         share_list = (ListView) findViewById(R.id.share_list);
         share_list.setAdapter(adapter);
@@ -63,12 +66,12 @@ public class Popup extends Activity {
                         new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
-                                new Thread(){
-                                    public void run(){
-                                        send(friend_token,nickname,userID);
+                                new Thread() {
+                                    public void run() {
+                                        send(friend_token, nickname, userID, map_String, imgPath);
                                     }
                                 }.start();
-                                Toast.makeText(Popup.this,Nick + "님에게 위치를 공유했습니다.",Toast.LENGTH_SHORT).show();
+                                Toast.makeText(Popup.this, Nick + "님에게 위치를 공유했습니다.", Toast.LENGTH_SHORT).show();
                             }
                         });
                 builder.setNegativeButton("아니요",
@@ -99,7 +102,7 @@ public class Popup extends Activity {
         return true;
     }
 
-    public String send(String to,  String Nickname, String ID) {
+    public String send(String to,  String Nickname, String ID, String map_String, String imgPath) {
         try {
             final String apiKey = getString(R.string.fcm_api_key);
             URL url = new URL("https://fcm.googleapis.com/fcm/send");
@@ -118,6 +121,8 @@ public class Popup extends Activity {
             notification.put("title", "위치 공유 알림");
             notification.put("Nickname", Nickname);
             notification.put("id", ID);
+            notification.put("map_String", map_String);
+            notification.put("imgPath", imgPath);
             message.put("data", notification);
 
             OutputStream os = conn.getOutputStream();

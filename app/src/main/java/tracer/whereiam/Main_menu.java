@@ -83,7 +83,6 @@ public class Main_menu extends AppCompatActivity implements ListViewBtnAdapter.L
                                             Toast.makeText(Main_menu.this, "친구삭제 완료", Toast.LENGTH_SHORT).show();
                                         }
                                     }
-
                                     @Override
                                     public void onFailure(Call<Void> call, Throwable t) {
 
@@ -174,11 +173,9 @@ public class Main_menu extends AppCompatActivity implements ListViewBtnAdapter.L
                 intent2.putExtra("friend_list", items);
                 intent2.putExtra("my_id",Long.toString(userID));
                 intent2.putExtra("my_nick",Nickname);
-//                    Toast.makeText(Main_menu.this, userID, Toast.LENGTH_SHORT).show();
                 startActivity(intent2);
             }
         });
-
     }
     private void refresh_friendlist(){
         items.clear();

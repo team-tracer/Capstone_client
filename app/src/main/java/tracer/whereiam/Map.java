@@ -2,7 +2,6 @@ package tracer.whereiam;
 
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.drawable.BitmapDrawable;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -23,13 +22,17 @@ import android.widget.Toast;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.drawable.GlideDrawable;
 import com.bumptech.glide.request.animation.GlideAnimation;
-import com.bumptech.glide.request.target.SimpleTarget;
 import com.bumptech.glide.request.target.ViewTarget;
 import com.github.nkzawa.emitter.Emitter;
 import com.github.nkzawa.socketio.client.IO;
 import com.github.nkzawa.socketio.client.Socket;
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
+import com.kakao.network.ErrorResult;
+import com.kakao.usermgmt.UserManagement;
+import com.kakao.usermgmt.callback.MeV2ResponseCallback;
+import com.kakao.usermgmt.response.MeV2Response;
+import com.kakao.util.helper.log.Logger;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -37,6 +40,7 @@ import org.json.JSONObject;
 import java.io.Serializable;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.List;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -51,9 +55,16 @@ public class Map extends AppCompatActivity implements Serializable {
     private TextView map_name;
     private ImageView myPoint;
     private IntentIntegrator qrScan;
+    private String map_String;
     private String imgPath;
+    private String Shared;
     private String userID;
     private String Nickname;
+    private String recv_ID;
+    private String recv_map_String;
+    private String recv_imgPath;
+    boolean qr_flag = false;
+    boolean recv_flag = false;
     ArrayList<ListViewItem> items;
     RelativeLayout map_layout;
     RelativeLayout.LayoutParams layoutParams;
@@ -76,7 +87,7 @@ public class Map extends AppCompatActivity implements Serializable {
     private int cnt1 = 0;
     private double direction;
     int flag = 1;
-boolean flag1 = false;
+    boolean flag1 = false;
     float[] mR = new float[9];
     float[] mI = new float[9];
     float[] mV = new float[9];
@@ -101,12 +112,36 @@ boolean flag1 = false;
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_map);
 
-        final Intent intent= getIntent();
-        items = (ArrayList<ListViewItem>) intent.getSerializableExtra("friend_list");
-        userID = intent.getStringExtra("my_id");
-        Nickname = intent.getStringExtra("my_nick");
-
         map_name = (TextView) findViewById(R.id.map_name);
+        map_layout = (RelativeLayout) findViewById(R.id.map_layout);
+
+        final Intent intent= getIntent();
+        Shared = intent.getStringExtra("shared");
+        if(Shared == null){
+            // 위치 공유를 받지 않은 경우
+            items = (ArrayList<ListViewItem>) intent.getSerializableExtra("friend_list");
+            userID = intent.getStringExtra("my_id");
+            Nickname = intent.getStringExtra("my_nick");
+        }
+        else{
+            // 위치를 추적하고 있지 않을 때 위치 공유를 받은 경우
+            // 위치를 추적하고 있을 때 위치 공유 받은 경우는 onNewIntent()에서 처리
+            recv_flag = true;
+            recv_ID = intent.getStringExtra("snd_ID");
+            recv_map_String = intent.getStringExtra("snd_map_String");
+            recv_imgPath = intent.getStringExtra("snd_imgPath");
+            map_name.setText(recv_map_String);
+            Glide.with(getApplicationContext()).load(recv_imgPath).into(new ViewTarget<RelativeLayout, GlideDrawable>(map_layout) {
+                @Override
+                public void onResourceReady(GlideDrawable resource, GlideAnimation<? super GlideDrawable> glideAnimation) {
+                    map_layout.setBackgroundDrawable(resource);
+                    map_layout.requestLayout();
+                }
+            });
+            items = new ArrayList<ListViewItem>();
+            requestMe();
+        }
+
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         stepDetectorSensor = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_DETECTOR);
         accSensor = sensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
@@ -125,13 +160,8 @@ boolean flag1 = false;
                 .getSystemService(Context.WINDOW_SERVICE);
         windowManager.getDefaultDisplay().getMetrics(metrics);
 
-        map_name = (TextView) findViewById(R.id.map_name);
-        map_layout = (RelativeLayout) findViewById(R.id.map_layout);
-//        map_image = (ImageView) findViewById(R.id.map_image);
-
         myPoint=new ImageView(this);
         myPoint.setImageResource(R.drawable.point);
-
 
         qrScan = new IntentIntegrator(this);
         btn_scan = (Button)findViewById(R.id.btn_scan);
@@ -146,11 +176,18 @@ boolean flag1 = false;
         btn_share.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent2 = new Intent(getApplicationContext(), Popup.class);
-                intent2.putExtra("friend_list", items);
-                intent2.putExtra("my_id",userID);
-                intent2.putExtra("my_nick",Nickname);
-                startActivity(intent2);
+                if(qr_flag == false){
+                    Toast.makeText(Map.this, "위치를 추적하고 있지 않습니다.", Toast.LENGTH_LONG).show();
+                }
+                else {
+                    Intent intent2 = new Intent(getApplicationContext(), Popup.class);
+                    intent2.putExtra("friend_list", items);
+                    intent2.putExtra("my_id", userID);
+                    intent2.putExtra("my_nick", Nickname);
+                    intent2.putExtra("map_String", map_String);
+                    intent2.putExtra("imgPath", imgPath);
+                    startActivity(intent2);
+                }
             }
         });
     }
@@ -165,7 +202,8 @@ boolean flag1 = false;
                 Toast.makeText(Map.this,"스캔완료!", Toast.LENGTH_SHORT).show();
                 try{
                     JSONObject obj=new JSONObject(result.getContents());
-                    map_name.setText(obj.getString("map_name"));
+                    map_String = obj.getString("map_name");
+                    map_name.setText(map_String);
                     req_map(obj.getString("imageUrl"),obj.getInt("posX"),obj.getInt("posY"));
                     state=obj.getInt("dir");
                 }catch (JSONException e){
@@ -209,6 +247,7 @@ boolean flag1 = false;
                             map_layout.requestLayout();
                         }
                     });
+                    qr_flag = true;
                     map_layout.addView(myPoint, layoutParams);
                 }
             }
@@ -220,6 +259,19 @@ boolean flag1 = false;
         });
     }
 
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        recv_ID = intent.getStringExtra("snd_ID");
+        recv_map_String = intent.getStringExtra("snd_map_String");
+        recv_imgPath = intent.getStringExtra("snd_imgPath");
+        if(recv_map_String.equals(map_String)){
+            Toast.makeText(this, "같은 건물에 있습니다.", Toast.LENGTH_SHORT).show();
+        }
+        else {
+            Toast.makeText(this, "같은 건물에 있어야 합니다.", Toast.LENGTH_SHORT).show();
+        }
+    }
 
     @Override
     protected void onResume() {
@@ -241,7 +293,6 @@ boolean flag1 = false;
         sensorManager.unregisterListener(gyroL);
         sensorManager.unregisterListener(magL);
     }
-
 
     double KalmanValue(KalmanFilter kal) {
         /*      시스템 방정식 부분      */
@@ -584,4 +635,56 @@ boolean flag1 = false;
         }
     };
 
+    private void requestMe() {
+        List<String> keys = new ArrayList<>();
+        keys.add("properties.nickname");
+        keys.add("properties.profile_image");
+
+        UserManagement.getInstance().me(keys, new MeV2ResponseCallback() {
+            @Override
+            public void onFailure(ErrorResult errorResult) {
+                String message = "failed to get user info. msg=" + errorResult;
+                Logger.d(message);
+            }
+
+            @Override
+            public void onSessionClosed(ErrorResult errorResult) {
+                redirectLoginActivity();
+            }
+
+            @Override
+            public void onSuccess(MeV2Response response) {
+                userID = Long.toString(response.getId());
+                Nickname = response.getNickname();
+                Retrofit retrofit = new Retrofit.Builder()
+                        .baseUrl(RetroApi.BASEURL).addConverterFactory(GsonConverterFactory.create()).build();
+                RetroApi apiService = retrofit.create(RetroApi.class);
+                Call<List<ListViewItem>> res = apiService.loadFrd(userID);
+                res.enqueue(new Callback<List<ListViewItem>>() {
+                    @Override
+                    public void onResponse(Call<List<ListViewItem>> call, Response<List<ListViewItem>> resp) {
+                        List<ListViewItem> friend_list = resp.body();
+                        for(int i = 0; i < friend_list.size(); i++){
+                            ListViewItem item = new ListViewItem();
+                            item.setProfile_image(friend_list.get(i).getProfile_image());
+                            item.setNickname(friend_list.get(i).getNickname());
+                            item.setUserID(friend_list.get(i).getUserID());
+                            item.setToken(friend_list.get(i).getToken());
+                            items.add(item);
+                        }
+                    }
+                    @Override
+                    public void onFailure(Call<List<ListViewItem>> call, Throwable t) {
+                        Logger.e("friend data receive error");
+                    }
+                });
+            }
+        });
+    }
+
+    protected void redirectLoginActivity() {
+        final Intent intent3 = new Intent(this, login.class);
+        startActivity(intent3);
+        finish();
+    }
 }
