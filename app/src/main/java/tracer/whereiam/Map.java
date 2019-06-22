@@ -53,21 +53,22 @@ public class Map extends AppCompatActivity implements Serializable {
     private Button btn_share;
     private Button btn_scan;
     private TextView map_name;
-    private ImageView myPoint;
+    private ImageView myPoint, oppoPoint;
     private IntentIntegrator qrScan;
     private String map_String;
     private String imgPath;
-    private String Shared;
+    private String Shared, IsTracking;
     private String userID;
     private String Nickname;
     private String recv_ID;
     private String recv_map_String;
     private String recv_imgPath;
+    private Integer myPos_x, myPos_y, oppoPos_x, oppoPos_y, my_len, oppo_len;
     boolean qr_flag = false;
     boolean recv_flag = false;
     ArrayList<ListViewItem> items;
     RelativeLayout map_layout;
-    RelativeLayout.LayoutParams layoutParams;
+    RelativeLayout.LayoutParams layoutParams, layoutParams2;
 
     DisplayMetrics metrics;
     WindowManager windowManager;
@@ -104,7 +105,7 @@ public class Map extends AppCompatActivity implements Serializable {
     int[] dy={0,1,0,-1};
 //    int[] dx = {0,1,1,1,0,-1,-1,-1};
 //    int[] dy = {-1,-1,0,1,1,1,0,-1}; // 0서, 1남, 2동, 3북
-    int state=0;
+    int state=-1;
     private Socket socket;
 
     @Override
@@ -117,20 +118,24 @@ public class Map extends AppCompatActivity implements Serializable {
 
         final Intent intent= getIntent();
         Shared = intent.getStringExtra("shared");
-        if(Shared == null){
-            // 위치 공유를 받지 않은 경우
+        if(Shared == null){ // 처음에 자기가 위치 추적 서비스를 이용할 때
             items = (ArrayList<ListViewItem>) intent.getSerializableExtra("friend_list");
             userID = intent.getStringExtra("my_id");
             Nickname = intent.getStringExtra("my_nick");
         }
-        else{
-            // 위치를 추적하고 있지 않을 때 위치 공유를 받은 경우
-            // 위치를 추적하고 있을 때 위치 공유 받은 경우는 onNewIntent()에서 처리
+        else{ // 자신은 QR코드를 안 찍은 상태에서 상대방에게 온 알림을 눌렀을 때 ( 상대방의 위치를 가져오기만 할 때)
             recv_flag = true;
             recv_ID = intent.getStringExtra("snd_ID");
             recv_map_String = intent.getStringExtra("snd_map_String");
             recv_imgPath = intent.getStringExtra("snd_imgPath");
             map_name.setText(recv_map_String);
+
+            oppoPoint=new ImageView(this);
+            layoutParams2= new RelativeLayout.LayoutParams(30, 30);
+            oppoPoint.setImageResource(R.drawable.oppo_point);
+            oppoPoint.bringToFront();
+
+
             Glide.with(getApplicationContext()).load(recv_imgPath).into(new ViewTarget<RelativeLayout, GlideDrawable>(map_layout) {
                 @Override
                 public void onResourceReady(GlideDrawable resource, GlideAnimation<? super GlideDrawable> glideAnimation) {
@@ -161,7 +166,7 @@ public class Map extends AppCompatActivity implements Serializable {
         windowManager.getDefaultDisplay().getMetrics(metrics);
 
         myPoint=new ImageView(this);
-        myPoint.setImageResource(R.drawable.point);
+        myPoint.setImageResource(R.drawable.my_point);
 
         qrScan = new IntentIntegrator(this);
         btn_scan = (Button)findViewById(R.id.btn_scan);
@@ -199,7 +204,6 @@ public class Map extends AppCompatActivity implements Serializable {
                 Toast.makeText(Map.this, "취소!", Toast.LENGTH_SHORT).show();
             }
             else{
-                Toast.makeText(Map.this,"스캔완료!", Toast.LENGTH_SHORT).show();
                 try{
                     JSONObject obj=new JSONObject(result.getContents());
                     map_String = obj.getString("map_name");
@@ -218,6 +222,8 @@ public class Map extends AppCompatActivity implements Serializable {
         layoutParams = new RelativeLayout.LayoutParams(30, 30);
         layoutParams.leftMargin = (int) (map_layout.getWidth() * ((float) pos_x / 1000)); // 233
         layoutParams.topMargin = (int) (map_layout.getHeight() * ((float) pos_y / 1000)); // 255
+        myPos_x=pos_x;
+        myPos_y=pos_y;
         myPoint.bringToFront();
 
         Retrofit retrofit = new Retrofit.Builder()
@@ -229,11 +235,11 @@ public class Map extends AppCompatActivity implements Serializable {
             public void onResponse(Call<Map_Res> call, final Response<Map_Res> response) {
                 if (response.isSuccessful()) {
                     try {
-//                        socket= IO.socket("http://165.246.242.150:8000");
                         socket=IO.socket(RetroApi.BASEURL);
                         socket.on(Socket.EVENT_CONNECT, onConnect);
                         socket.on(Socket.EVENT_ERROR,onError);
                         socket.on(Socket.EVENT_DISCONNECT, onDisconnect);
+                        socket.on("oppo_changed",oppoPoint_changed);
                         socket.connect();
                     }catch(URISyntaxException e){
                         e.printStackTrace();
@@ -249,6 +255,15 @@ public class Map extends AppCompatActivity implements Serializable {
                     });
                     qr_flag = true;
                     map_layout.addView(myPoint, layoutParams);
+                    try{
+                        JSONObject obj=new JSONObject();
+                        obj.accumulate("id",userID);
+                        obj.accumulate("posX",pos_x);
+                        obj.accumulate("posY",pos_y);
+                        socket.emit("stepDetection",obj);
+                    }catch(Exception e){
+                        e.printStackTrace();
+                    }
                 }
             }
 
@@ -265,10 +280,22 @@ public class Map extends AppCompatActivity implements Serializable {
         recv_ID = intent.getStringExtra("snd_ID");
         recv_map_String = intent.getStringExtra("snd_map_String");
         recv_imgPath = intent.getStringExtra("snd_imgPath");
-        if(recv_map_String.equals(map_String)){
-            Toast.makeText(this, "같은 건물에 있습니다.", Toast.LENGTH_SHORT).show();
+        if(recv_map_String.equals(map_String)){ // 위치 공유를 해야 한다.
+            oppoPoint=new ImageView(this);
+            layoutParams2= new RelativeLayout.LayoutParams(30, 30);
+            oppoPoint.setImageResource(R.drawable.oppo_point);
+            oppoPoint.bringToFront();
+            map_layout.addView(oppoPoint);
+            try {
+                JSONObject obj=new JSONObject();
+                obj.accumulate("acceptID",userID);
+                obj.accumulate("requestID",recv_ID);
+                socket.emit("request_full_duplex",obj);
+            }catch (Exception e){
+                e.printStackTrace();
+            }
         }
-        else {
+        else { // 이렇게 예외처리로 끝
             Toast.makeText(this, "같은 건물에 있어야 합니다.", Toast.LENGTH_SHORT).show();
         }
     }
@@ -321,26 +348,23 @@ public class Map extends AppCompatActivity implements Serializable {
 
     private class deteTListener implements SensorEventListener {
         public void onSensorChanged(SensorEvent event) {
-            if (event.sensor.getType() == Sensor.TYPE_STEP_DETECTOR) {
+            if (state !=-1 && event.sensor.getType() == Sensor.TYPE_STEP_DETECTOR) {
                 if (event.values[0] == 1.0f)//      1 step detect시
                 {
-//                    Toast.makeText(Map.this, "hi", Toast.LENGTH_SHORT).show();
                     JSONObject obj=new JSONObject();
-                    Integer len=70;
+                    Integer len=8;
 //                    if(대각선 이동일 경우){
 //                        len=Math.sqrt(len);
 //                }
-                    Integer x_len=(int)(map_layout.getWidth()*((float)len/10000));
-                    Integer y_len=(int)(map_layout.getHeight()*((float)len/10000));
-//                    Integer length = 15;
-//                    (int) (map_layout.getWidth() * ((float) pos_x / 1000)); // 233
-                    layoutParams.leftMargin += (dx[state] * x_len);
-                    layoutParams.topMargin += (dy[state] * y_len);
+                    myPos_x+=(dx[state]*len);
+                    myPos_y+=(dy[state]*len);
+                    layoutParams.leftMargin=(int)(map_layout.getWidth()*((float)myPos_x/1000));
+                    layoutParams.topMargin=(int)(map_layout.getHeight()*((float)myPos_y/1000));
                     myPoint.setLayoutParams(layoutParams);
                     try {
                         obj.accumulate("id",userID);
-                        obj.accumulate("posX", layoutParams.leftMargin);
-                        obj.accumulate("posY",layoutParams.topMargin);
+                        obj.accumulate("posX", myPos_x);
+                        obj.accumulate("posY",myPos_y);
                         socket.emit("stepDetection",obj);
                     }catch (Exception e){
                         e.printStackTrace();
@@ -427,36 +451,38 @@ public class Map extends AppCompatActivity implements Serializable {
 
     private class gyroListener implements SensorEventListener {
         public void onSensorChanged(final SensorEvent event) {
-            direction = event.values[1];
-            gyrO_kal.z_Din = direction;
-            direction = KalmanValue(gyrO_kal);
+            if(state!=-1) {
+                direction = event.values[1];
+                gyrO_kal.z_Din = direction;
+                direction = KalmanValue(gyrO_kal);
 
-            if (direction > 0.65) {
-                if (flag == 1) {
-                    flag = 0;
-                    state = (state + 1) % 4;
-                    delayHandler.postDelayed(new Runnable() {
-                        @Override
-                        public void run() {
-                            flag = 1;
-                        }
-                    }, 1000);
+                if (direction > 0.65) {
+                    if (flag == 1) {
+                        flag = 0;
+                        state = (state + 1) % 4;
+                        delayHandler.postDelayed(new Runnable() {
+                            @Override
+                            public void run() {
+                                flag = 1;
+                            }
+                        }, 1000);
+                    }
+                } else if (direction < -0.65) {
+                    if (flag == 1) {
+                        state = (state + 3) % 4;
+                        flag = 0;
+                        delayHandler.postDelayed(new Runnable() {
+                            @Override
+                            public void run() {
+                                flag = 1;
+                            }
+                        }, 1000);
+                    }
+                } else {
+                    flag = 1;
                 }
-            } else if (direction < -0.65) {
-                if (flag == 1) {
-                    state = (state + 3) % 4;
-                    flag = 0;
-                    delayHandler.postDelayed(new Runnable() {
-                        @Override
-                        public void run() {
-                            flag = 1;
-                        }
-                    }, 1000);
-                }
-            } else {
-                flag = 1;
-            }
 //            map_name.setText(dir_str[state]);
+            }
         }
 
         public void onAccuracyChanged(Sensor sensor, int accuracy) {
@@ -615,7 +641,8 @@ public class Map extends AppCompatActivity implements Serializable {
                 obj.accumulate("id", userID);
                 obj.accumulate("posX",layoutParams.leftMargin);
                 obj.accumulate("posY",layoutParams.topMargin);
-                socket.emit("stepDetection",obj);
+                obj.accumulate("oppo_id",recv_ID);
+                socket.emit("registerUser",userID);
             }catch(Exception e){
                 e.printStackTrace();
             }
@@ -632,6 +659,31 @@ public class Map extends AppCompatActivity implements Serializable {
         @Override
         public void call(Object... args) {
             socket.emit("error",userID);
+        }
+    };
+    private Emitter.Listener oppoPoint_changed=new Emitter.Listener() {
+        @Override
+        public void call(Object... args) {
+            try{
+                final JSONObject receiveData=(JSONObject)args[0];
+                layoutParams2.leftMargin=(int)(map_layout.getWidth() * ((float) receiveData.getInt("pos_x")/ 1000));
+                layoutParams2.topMargin=(int)(map_layout.getHeight() * ((float) receiveData.getInt("pos_y")/ 1000));
+                Log.e("posX",Integer.toString(layoutParams2.leftMargin));
+                Log.e("posY",Integer.toString(layoutParams2.topMargin));
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            Toast.makeText(Map.this, Integer.toString(receiveData.getInt("pos_y")), Toast.LENGTH_SHORT).show();
+                            oppoPoint.setLayoutParams(layoutParams2);
+                        }catch (Exception e){
+                            e.printStackTrace();
+                        }
+                    }
+                });
+            }catch(Exception e){
+                e.printStackTrace();
+            }
         }
     };
 
@@ -678,6 +730,26 @@ public class Map extends AppCompatActivity implements Serializable {
                         Logger.e("friend data receive error");
                     }
                 });
+                try {
+//                        socket= IO.socket("http://165.246.242.150:8000");
+                    if(socket==null) {
+                        socket = IO.socket(RetroApi.BASEURL);
+                        socket.on(Socket.EVENT_CONNECT, onConnect);
+                        socket.on(Socket.EVENT_ERROR, onError);
+                        socket.on(Socket.EVENT_DISCONNECT, onDisconnect);
+                        socket.on("oppo_changed",oppoPoint_changed);
+                        socket.connect();
+
+                        JSONObject obj = new JSONObject();
+                        obj.accumulate("from_id", recv_ID);
+                        obj.accumulate("to_id",userID);
+                        socket.emit("registerUser",userID);
+                        socket.emit("request_oppoPoint", obj);
+                        map_layout.addView(oppoPoint,layoutParams2);
+                    }
+                }catch(Exception e){
+                    e.printStackTrace();
+                }
             }
         });
     }
