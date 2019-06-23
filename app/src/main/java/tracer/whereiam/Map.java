@@ -447,6 +447,15 @@ public class Map extends AppCompatActivity implements Serializable {
                     layoutParams.leftMargin=(int)(map_layout.getWidth()*((float)myPos_x/1000));
                     layoutParams.topMargin=(int)(map_layout.getHeight()*((float)myPos_y/1000));
                     myPoint.setLayoutParams(layoutParams);
+                    JSONObject obj=new JSONObject();
+                    try {
+                        obj.accumulate("id",userID);
+                        obj.accumulate("posX", myPos_x);
+                        obj.accumulate("posY",myPos_y);
+                        socket.emit("stepDetection",obj);
+                    }catch (Exception e){
+                        e.printStackTrace();
+                    }
                 }
                 lastX = x;
                 lastY = y;
