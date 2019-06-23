@@ -87,6 +87,7 @@ public class Map extends AppCompatActivity implements Serializable {
     private double mStepDistance = 0.0;       //한 보폭의 길이, 단위는 m
     private int cnt1 = 0;
     private double direction;
+    private double rot_Angle;
     int flag = 1;
     boolean flag1 = false;
     float[] mR = new float[9];
@@ -96,16 +97,20 @@ public class Map extends AppCompatActivity implements Serializable {
     float[] mGravity = null;
     float[] mGeometric = null;
     final static int FREQ = 1;
-    String[] dir_str = {"서", "남", "동", "북"};
-//    String[] dir_str={"북", "동북", "동", "동남","남","남서","서","북서"};
 
     KalmanFilter accL_kal;
     KalmanFilter gyrO_kal;
-    int[] dx={-1,0,1,0};
-    int[] dy={0,1,0,-1};
-//    int[] dx = {0,1,1,1,0,-1,-1,-1};
-//    int[] dy = {-1,-1,0,1,1,1,0,-1}; // 0서, 1남, 2동, 3북
-    int state=-1;
+    KalmanFilter testGyro;
+    double[] dx = {Math.cos(Math.toRadians(270.0)),Math.cos(Math.toRadians(300.0)),Math.cos(Math.toRadians(330.0)),
+            Math.cos(Math.toRadians(0.0)),Math.cos(Math.toRadians(30.0)),Math.cos(Math.toRadians(60.0)),
+            Math.cos(Math.toRadians(90.0)),Math.cos(Math.toRadians(120.0)),Math.cos(Math.toRadians(150.0)),
+            Math.cos(Math.toRadians(180.0)),Math.cos(Math.toRadians(210.0)),Math.cos(Math.toRadians(240.0))};
+
+    double[] dy = {Math.sin(Math.toRadians(270.0)),Math.sin(Math.toRadians(300.0)),Math.sin(Math.toRadians(330.0)),
+            Math.sin(Math.toRadians(0.0)),Math.sin(Math.toRadians(30.0)),Math.sin(Math.toRadians(60.0)),
+            Math.sin(Math.toRadians(90.0)),Math.sin(Math.toRadians(120.0)),Math.sin(Math.toRadians(150.0)),
+            Math.sin(Math.toRadians(180.0)),Math.sin(Math.toRadians(210.0)),Math.sin(Math.toRadians(240.0))};
+    int state = -1;
     private Socket socket;
 
     @Override
@@ -153,12 +158,12 @@ public class Map extends AppCompatActivity implements Serializable {
         gyroSensor = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
         magSensor = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
 
-//        accL = new accListener();
+        accL = new accListener();
         gyroL = new gyroListener();
-//        magL = new magListener();
         deteT = new deteTListener();
         accL_kal = new KalmanFilter();
         gyrO_kal = new KalmanFilter();
+        testGyro = new KalmanFilter();
 
         metrics = new DisplayMetrics();
         WindowManager windowManager = (WindowManager) getApplicationContext()
@@ -173,8 +178,13 @@ public class Map extends AppCompatActivity implements Serializable {
         btn_scan.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                qrScan.setPrompt("Scanning");
-                qrScan.initiateScan();
+                if(state == -1) {
+                    qrScan.setPrompt("Scanning");
+                    qrScan.initiateScan();
+                }
+                else{
+                    Toast.makeText(Map.this, "이미 위치를 추적하고 있습니다.", Toast.LENGTH_LONG).show();
+                }
             }
         });
         btn_share = (Button) findViewById(R.id.btn_share);
@@ -304,9 +314,9 @@ public class Map extends AppCompatActivity implements Serializable {
     protected void onResume() {
         super.onResume();
         /*      시작시 리스너 호출        */
-        sensorManager.registerListener(deteT, stepDetectorSensor, SensorManager.SENSOR_DELAY_UI);
-        sensorManager.registerListener(accL, accSensor, SensorManager.SENSOR_DELAY_NORMAL);
-        sensorManager.registerListener(gyroL, gyroSensor, SensorManager.SENSOR_DELAY_NORMAL);
+        sensorManager.registerListener(deteT, stepDetectorSensor, SensorManager.SENSOR_DELAY_FASTEST);
+        sensorManager.registerListener(accL, accSensor, SensorManager.SENSOR_DELAY_FASTEST);
+        sensorManager.registerListener(gyroL, gyroSensor, SensorManager.SENSOR_DELAY_FASTEST);
         sensorManager.registerListener(magL, magSensor, SensorManager.SENSOR_DELAY_NORMAL);
     }
 
@@ -345,19 +355,22 @@ public class Map extends AppCompatActivity implements Serializable {
 
         return kal.Xk;
     }
+    boolean stepFlag=false;
+    Handler stepDelay=new Handler();
+    int stepCnt=0;
 
     private class deteTListener implements SensorEventListener {
         public void onSensorChanged(SensorEvent event) {
-            if (state !=-1 && event.sensor.getType() == Sensor.TYPE_STEP_DETECTOR) {
+            if (state !=-1) {
                 if (event.values[0] == 1.0f)//      1 step detect시
                 {
+                    stepCnt++;
+                    stepFlag=true;
                     JSONObject obj=new JSONObject();
-                    Integer len=8;
-//                    if(대각선 이동일 경우){
-//                        len=Math.sqrt(len);
-//                }
-                    myPos_x+=(dx[state]*len);
-                    myPos_y+=(dy[state]*len);
+                    Integer len = 8;
+                    myPos_x += (int) (dx[state]*len);
+                    myPos_y += (int) (dy[state]*len);
+
                     layoutParams.leftMargin=(int)(map_layout.getWidth()*((float)myPos_x/1000));
                     layoutParams.topMargin=(int)(map_layout.getHeight()*((float)myPos_y/1000));
                     myPoint.setLayoutParams(layoutParams);
@@ -369,7 +382,15 @@ public class Map extends AppCompatActivity implements Serializable {
                     }catch (Exception e){
                         e.printStackTrace();
                     }
-
+                    stepDelay.postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            stepCnt--;
+                            if(stepCnt==0) {
+                                stepFlag = false;
+                            }
+                        }
+                    }, 1500);
                 }
             }
         }
@@ -379,260 +400,96 @@ public class Map extends AppCompatActivity implements Serializable {
         }
     }
 
-//    int count = values.Step;
-//    private class accListener implements SensorEventListener {
-//
-//        private long lastTime;
-//        private float speed;
-//        private float lastX = 0;
-//        private float lastY = 0;
-//        private float lastZ = 0;
-//
-//        private float x, y, z;
-//        private static final double SHAKE_THRESHOLD = 78;
-//
-//        public void onSensorChanged(SensorEvent event) {
-//
-//            long currentTime = System.currentTimeMillis();
-//            long gabOfTime = (currentTime - lastTime);
-//
-//            if (gabOfTime > 100) {
-//                lastTime = currentTime;
-//                x = event.values[0];
-//                y = event.values[1];
-//                z = event.values[2];
-//                speed = Math.abs(x + y + z - lastX - lastY - lastZ) / gabOfTime * 3000;
-//
-//                if (speed > SHAKE_THRESHOLD && !flag1) {
-//
-//                    JSONObject obj=new JSONObject();
-//                    double len=55;
-////                    String[] dir_str={"북", "동북", "동", "동남","남","남서","서","북서"};
-////                    if(state==1 || state==3 || state==5 || state==7){
-////                        len=len/Math.sqrt(2);
-////                    }
-//                    Integer x_len=(int)(map_layout.getWidth()*(len/10000));
-//                    Integer y_len=(int)(map_layout.getHeight()*(len/10000));
-////                    Integer length = 15;
-////                    (int) (map_layout.getWidth() * ((float) pos_x / 1000)); // 233
-//                    layoutParams.leftMargin += (dx[state] * x_len);
-//                    layoutParams.topMargin += (dy[state] * y_len);
-//                    myPoint.setLayoutParams(layoutParams);
-//                    try {
-//                        obj.accumulate("id",userID);
-//                        obj.accumulate("posX", layoutParams.leftMargin);
-//                        obj.accumulate("posY",layoutParams.topMargin);
-//                        socket.emit("stepDetection",obj);
-//                    }catch (Exception e){
-//                        e.printStackTrace();
-//                    }
-//
-////                    values.Step = count++;
-////                    StepDetector2.setText("Step Detect accL: " + String.valueOf(values.Step));
-////                    mStepDistance = (0.8 * values.Step);//     걸음수 x 보폭
-////                    String cStepDistance = String.format("%.1f", mStepDistance);
-////                    StepDistance.setText("Moving Distance : " + String.valueOf(cStepDistance) + "m");
-//                }
-//                lastX = x;
-//                lastY = y;
-//                lastZ = z;
-//                //flag1 = true;
-//                //svm은 신호 벡터 크기
-//                //double svm = abs(event.values[0])+abs(event.values[1])+abs(event.values[2]);
-//            }
-//
-//        }
-//
-//        public void onAccuracyChanged(Sensor sensor, int accuracy) {
-//        }
-//    }
+    private class accListener implements SensorEventListener {
 
-    Handler delayHandler = new Handler();
+        private long lastTime=0;
+        private float speed;
+        private float lastX = 0;
+        private float lastY = 0;
+        private float lastZ = 0;
+        boolean up_thresh=false;
+        boolean accStep_flag=false;
+        private float x, y, z;
+        private static final double SHAKE_THRESHOLD = 60;
+        Handler accHandler=new Handler();
+        private static final double DOWN_SHAKE_THRESHOLD = 30;
+
+        public void onSensorChanged(SensorEvent event) {
+
+            long currentTime = System.currentTimeMillis();
+            long gabOfTime = (currentTime - lastTime);
+
+            if (state!=-1 && gabOfTime > 100) {
+                lastTime = currentTime;
+                x = event.values[0];
+                y = event.values[1];
+                z = event.values[2];
+                speed = Math.abs(x + y + z - lastX - lastY - lastZ) / gabOfTime * 3000;
+                if(speed>SHAKE_THRESHOLD && !up_thresh){
+                    up_thresh=true;
+                    accHandler.postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            up_thresh=false;
+                        }
+                    },1000);
+                }
+                if(up_thresh && speed<DOWN_SHAKE_THRESHOLD){
+                    up_thresh=false;
+                    accStep_flag=true;
+                }
+
+                if (accStep_flag  && !stepFlag) {
+                    accStep_flag=false;
+                    Integer len = 8;
+                    myPos_x += (int) (dx[state]*len);
+                    myPos_y += (int) (dy[state]*len);
+                    layoutParams.leftMargin=(int)(map_layout.getWidth()*((float)myPos_x/1000));
+                    layoutParams.topMargin=(int)(map_layout.getHeight()*((float)myPos_y/1000));
+                    myPoint.setLayoutParams(layoutParams);
+                }
+                lastX = x;
+                lastY = y;
+                lastZ = z;
+            }
+        }
+        public void onAccuracyChanged(Sensor sensor, int accuracy) {
+        }
+    }
 
     private class gyroListener implements SensorEventListener {
+        private String[] dire = {"270","300","330","0","30","60","90","120","150","180","210","240"};
+        private long timestamp = 0;
+        private double yAngle = 0.0;
         public void onSensorChanged(final SensorEvent event) {
             if(state!=-1) {
-                direction = event.values[1];
-                gyrO_kal.z_Din = direction;
-                direction = KalmanValue(gyrO_kal);
-
-                if (direction > 0.65) {
-                    if (flag == 1) {
-                        flag = 0;
-                        state = (state + 1) % 4;
-                        delayHandler.postDelayed(new Runnable() {
-                            @Override
-                            public void run() {
-                                flag = 1;
-                            }
-                        }, 1000);
+                if(timestamp != 0){
+                    final float dT = (event.timestamp - timestamp) * 1.0f / 1000000000.0f;
+                    double axisY = event.values[1];
+                    testGyro.z_Din = axisY;
+                    axisY = KalmanValue(testGyro);
+                    yAngle = yAngle + (axisY * dT);
+                    if(axisY < 0.05 && axisY > -0.05) {
+                        final double Angle_value = Math.toDegrees(yAngle);
+                        if (Angle_value > 15.0) {
+                            int rot_num = (int) Math.round(Angle_value / 30.0);
+                            state = (state + 12 - rot_num) % 12;
+                            yAngle = 0;
+                        } else if (Angle_value < -15.0) {
+                            int rot_num = (int) Math.round(Angle_value / 30.0);
+                            state = (state - rot_num) % 12;
+                            yAngle = 0;
+                        }
                     }
-                } else if (direction < -0.65) {
-                    if (flag == 1) {
-                        state = (state + 3) % 4;
-                        flag = 0;
-                        delayHandler.postDelayed(new Runnable() {
-                            @Override
-                            public void run() {
-                                flag = 1;
-                            }
-                        }, 1000);
-                    }
-                } else {
-                    flag = 1;
                 }
-//            map_name.setText(dir_str[state]);
+                timestamp = event.timestamp;
             }
         }
 
         public void onAccuracyChanged(Sensor sensor, int accuracy) {
         }
     }
-    int pre_step = 0;
 
-//    private class gyroListener implements SensorEventListener {
-//        public void onSensorChanged(final SensorEvent event) {
-////            dir_str[0] = "북";
-////            dir_str[1] = "동북";
-////            dir_str[2] = "동";
-////            dir_str[3] = "동남";
-////            dir_str[4] = "남";
-////            dir_str[5] = "남서";
-////            dir_str[6] = "서";
-////            dir_str[7] = "북서";
-//            gyrO_kal.z_Din = event.values[1];
-//            direction = KalmanValue(gyrO_kal);
-//
-//            /*남 4*/
-//            if (direction > 2.45 && direction < -2.45) {
-//                if (flag == 1) {
-//                    Toast.makeText(getApplicationContext(), "남", Toast.LENGTH_SHORT).show();
-//                    flag = 0;
-//                    state = (state + 4) % 8;
-//                    delayHandler.postDelayed(new Runnable() {
-//                        @Override
-//                        public void run() {
-//                            flag = 1;
-//                        }
-//                    }, 1000);
-//                }
-//            }
-//            /*서남 5*/
-//            else if (direction > 1.95 && direction < 2.45) {
-//                if (flag == 1) {
-//                    state = (state + 5) % 8;
-//                    flag = 0;
-//                    Toast.makeText(getApplicationContext(), "서남", Toast.LENGTH_SHORT).show();
-//                    delayHandler.postDelayed(new Runnable() {
-//                        @Override
-//                        public void run() {
-//                            flag = 1;
-//                        }
-//                    }, 1000);
-//                }
-//            }
-//            /*동남 3*/
-//            else if (direction < -1.95 && direction > -2.45) {
-//                if (flag == 1) {
-//                    state = (state + 3) % 8;
-//                    flag = 0;
-//                    Toast.makeText(getApplicationContext(), "동남", Toast.LENGTH_SHORT).show();
-//                    delayHandler.postDelayed(new Runnable() {
-//                        @Override
-//                        public void run() {
-//                            flag = 1;
-//                        }
-//                    }, 1000);
-//                }
-//            }
-//            /*서 6*/
-//            else if (direction > 0.65 && direction < 1.95) {
-//                if (flag == 1) {
-//                    state = (state + 6) % 8;
-//                    flag = 0;
-//                    Toast.makeText(getApplicationContext(), "서", Toast.LENGTH_SHORT).show();
-//                    delayHandler.postDelayed(new Runnable() {
-//                        @Override
-//                        public void run() {
-//                            flag = 1;
-//                        }
-//                    }, 1000);
-//                }
-//            }
-//            /*동 2*/
-//            else if (direction < -0.65 && direction > -1.95) {
-//                if (flag == 1) {
-//                    state = (state + 2) % 8;
-//                    flag = 0;
-//                    Toast.makeText(getApplicationContext(), "동", Toast.LENGTH_SHORT).show();
-//                    delayHandler.postDelayed(new Runnable() {
-//                        @Override
-//                        public void run() {
-//                            flag = 1;
-//                        }
-//                    }, 1000);
-//                }
-//            }
-//            /*서북 7*/
-//            else if (direction > 0.5 && direction < 0.65) {
-//                if (flag == 1) {
-//                    Toast.makeText(getApplicationContext(), "서북", Toast.LENGTH_SHORT).show();
-//                    flag = 0;
-//                    state = (state + 7) % 8;
-//                    delayHandler.postDelayed(new Runnable() {
-//                        @Override
-//                        public void run() {
-//                            flag = 1;
-//                        }
-//                    }, 1000);
-//                }
-//            }
-//            /*동북 1*/
-//            else if (direction < -0.5 && direction > -0.6) {
-//                if (flag == 1) {
-//                    state = (state + 1) % 8;
-//                    flag = 0;
-//                    Toast.makeText(getApplicationContext(), "동북", Toast.LENGTH_SHORT).show();
-//                    delayHandler.postDelayed(new Runnable() {
-//                        @Override
-//                        public void run() {
-//                            flag = 1;
-//                        }
-//                    }, 1000);
-//                }
-//            }
-//            else {
-//                flag = 1;
-//            }
-//            /*방향전환시에는 스텝카운터 증가를 막는다*/
-//            if (pre_step != state) flag1=true;
-//            else flag1 = false;
-//            pre_step = state;
-////            StepDirection.setText(dir_str[state]);
-//        }
-//
-//        public void onAccuracyChanged(Sensor sensor, int accuracy) {
-//        }
-//    }
-
-
-    private class magListener implements SensorEventListener {
-        public void onSensorChanged(SensorEvent event) {
-            String x, y, z;
-
-            x = String.format("%.2f", event.values[0]);
-            y = String.format("%.2f", event.values[1]);
-            z = String.format("%.2f", event.values[2]);
-
-            Log.d("SENSOR_value", "magnetic changed.");
-            Log.d("SENSOR_value", "  magnetic X: " + x
-                    + ", magnetic Y: " + y
-                    + ", magnetic Z: " + z);
-        }
-
-        public void onAccuracyChanged(Sensor sensor, int accuracy) {
-        }
-    }
     private Emitter.Listener onConnect=new Emitter.Listener() {
         @Override
         public void call(Object... args) {
