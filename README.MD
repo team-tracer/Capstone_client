@@ -9,10 +9,15 @@
 
 ### 애플리케이션 화면
 - Login
+
   ![Login](/MarkDownImages/login.PNG)
+  
 - Main
+
   ![Main](/MarkDownImages/main.PNG)
+  
 - Demo
+
   ![Demo](/MarkDownImages/demo.gif)
 
 ### 역할
